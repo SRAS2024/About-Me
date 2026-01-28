@@ -17,4 +17,4 @@ class Config:
 
     # Supported UI locales (extend as you add translations)
     BABEL_DEFAULT_LOCALE = "en"
-    BABEL_SUPPORTED_LOCALES = ["en", "pt_BR", "pt"]
+    BABEL_SUPPORTED_LOCALES = ["en", "pt_BR", "pt", "es", "fr", "de", "it", "ja", "ko", "zh"]

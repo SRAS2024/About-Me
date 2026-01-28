@@ -40,6 +40,7 @@ class LinkItem(db.Model):
     label = db.Column(db.Text, nullable=False)
     url = db.Column(db.Text, nullable=False)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
+    pair_index = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     __table_args__ = (
