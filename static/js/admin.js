@@ -2,64 +2,71 @@
 (function () {
   "use strict";
 
-  const S = window.__INITIAL__;
-  let github = (S.github || []).map(l => ({ ...l }));
-  let website = (S.website || []).map(l => ({ ...l }));
-  let photoExists = S.photoExists;
-  let photoPreviewURL = photoExists ? "/assets/photo?" + Date.now() : null;
-  let resumes = (S.resumes || []);
+  var S = window.__INITIAL__;
+  var github = (S.github || []).map(function(l){ return Object.assign({}, l); });
+  var website = (S.website || []).map(function(l){ return Object.assign({}, l); });
+  var accomplishments = (S.accomplishments || []).map(function(a){ return Object.assign({}, a); });
+  var photoExists = S.photoExists;
+  var photoPreviewURL = photoExists ? "/assets/photo?" + Date.now() : null;
+  var resumes = S.resumes || [];
 
   /* ── DOM refs ─────────────────────────────────────────────────── */
-  const $id = id => document.getElementById(id);
-  const githubEditor   = $id("githubEditor");
-  const websiteEditor  = $id("websiteEditor");
-  const addGithubBtn   = $id("addGithubBtn");
-  const addWebsiteBtn  = $id("addWebsiteBtn");
-  const saveBtn        = $id("saveBtn");
-  const saveStatus     = $id("saveStatus");
-  const photoInput     = $id("photoInput");
-  const photoInputHidden = $id("photoInputHidden");
-  const photoDeleteBtn = $id("photoDeleteBtn");
-  const resumeInput    = $id("resumeInput");
-  const resumeLocale   = $id("resumeLocale");
-  const resumeListHint = $id("resumeListHint");
+  var $id = function(id){ return document.getElementById(id); };
+  var githubEditor   = $id("githubEditor");
+  var websiteEditor  = $id("websiteEditor");
+  var accompEditor   = $id("accompEditor");
+  var addGithubBtn   = $id("addGithubBtn");
+  var addWebsiteBtn  = $id("addWebsiteBtn");
+  var addAccompBtn   = $id("addAccompBtn");
+  var saveBtn        = $id("saveBtn");
+  var saveStatus     = $id("saveStatus");
+  var photoInput     = $id("photoInput");
+  var photoInputHidden = $id("photoInputHidden");
+  var photoDeleteBtn = $id("photoDeleteBtn");
+  var resumeInput    = $id("resumeInput");
+  var resumeLocale   = $id("resumeLocale");
+  var resumeListHint = $id("resumeListHint");
 
   // Preview refs
-  const previewPhoto       = $id("previewPhoto");
-  const previewPlaceholder = $id("previewPhotoPlaceholder");
-  const previewPairedLinks = $id("previewPairedLinks");
-  const previewResumeBtn   = $id("previewResumeBtn");
+  var previewPhoto       = $id("previewPhoto");
+  var previewPlaceholder = $id("previewPhotoPlaceholder");
+  var previewPortfolio   = $id("previewPortfolio");
+  var previewPortfolioSection = $id("previewPortfolioSection");
+  var previewResumeSection = $id("previewResumeSection");
+  var previewResumeBtn   = $id("previewResumeBtn");
+  var previewAccomplishments = $id("previewAccomplishments");
+  var previewAccompSection = $id("previewAccompSection");
 
   /* ── Render link editors ──────────────────────────────────────── */
-  function renderEditor(container, list, kind) {
+  function renderLinkEditor(container, list, kind) {
     container.innerHTML = "";
-    list.forEach((item, i) => {
-      const row = document.createElement("div");
+    list.forEach(function(item, i) {
+      var row = document.createElement("div");
       row.className = "link-editor-row";
 
-      const idx = document.createElement("span");
+      var idx = document.createElement("span");
       idx.className = "pair-index";
       idx.textContent = (i + 1);
 
-      const labelIn = document.createElement("input");
+      var labelIn = document.createElement("input");
       labelIn.type = "text";
       labelIn.placeholder = "Label";
       labelIn.value = item.label || "";
-      labelIn.addEventListener("input", () => { item.label = labelIn.value; renderPreview(); });
+      labelIn.addEventListener("input", function() { item.label = labelIn.value; renderPreview(); });
 
-      const urlIn = document.createElement("input");
+      var urlIn = document.createElement("input");
       urlIn.type = "text";
       urlIn.placeholder = "URL";
       urlIn.value = item.url || "";
-      urlIn.addEventListener("input", () => { item.url = urlIn.value; renderPreview(); });
+      urlIn.addEventListener("input", function() { item.url = urlIn.value; renderPreview(); });
 
-      const rm = document.createElement("button");
+      var rm = document.createElement("button");
       rm.type = "button";
       rm.className = "remove-link";
-      rm.textContent = "×";
-      rm.addEventListener("click", () => {
+      rm.textContent = "\u00d7";
+      rm.addEventListener("click", function() {
         list.splice(i, 1);
-        renderEditor(container, list, kind);
+        renderLinkEditor(container, list, kind);
         renderPreview();
       });
 
@@ -71,12 +78,50 @@
   function addLink(list, container, kind) {
     if (list.length >= 5) return;
     list.push({ label: "", url: "", kind: kind, sort_order: list.length });
-    renderEditor(container, list, kind);
+    renderLinkEditor(container, list, kind);
     renderPreview();
   }
 
-  addGithubBtn.addEventListener("click", () => addLink(github, githubEditor, "github"));
-  addWebsiteBtn.addEventListener("click", () => addLink(website, websiteEditor, "website"));
+  addGithubBtn.addEventListener("click", function() { addLink(github, githubEditor, "github"); });
+  addWebsiteBtn.addEventListener("click", function() { addLink(website, websiteEditor, "website"); });
+
+  /* ── Render accomplishment editor ───────────────────────────── */
+  function renderAccompEditor() {
+    accompEditor.innerHTML = "";
+    accomplishments.forEach(function(item, i) {
+      var row = document.createElement("div");
+      row.className = "link-editor-row";
+
+      var idx = document.createElement("span");
+      idx.className = "pair-index";
+      idx.textContent = (i + 1);
+
+      var textIn = document.createElement("textarea");
+      textIn.placeholder = "Accomplishment text";
+      textIn.value = item.text || "";
+      textIn.addEventListener("input", function() { item.text = textIn.value; renderPreview(); });
+
+      var rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "remove-link";
+      rm.textContent = "\u00d7";
+      rm.addEventListener("click", function() {
+        accomplishments.splice(i, 1);
+        renderAccompEditor();
+        renderPreview();
+      });
+
+      row.append(idx, textIn, rm);
+      accompEditor.appendChild(row);
+    });
+  }
+
+  addAccompBtn.addEventListener("click", function() {
+    if (accomplishments.length >= 20) return;
+    accomplishments.push({ text: "", sort_order: accomplishments.length });
+    renderAccompEditor();
+    renderPreview();
+  });
 
   /* ── Render live preview ──────────────────────────────────────── */
   function renderPreview() {
@@ -90,53 +135,63 @@
       previewPlaceholder.classList.remove("hidden");
     }
 
-    // Resume btn
+    // Resume section
     if (resumes.length > 0) {
-      previewResumeBtn.classList.remove("hidden");
-      previewResumeBtn.href = "/assets/resume";
+      previewResumeSection.classList.remove("hidden");
     } else {
-      previewResumeBtn.classList.add("hidden");
+      previewResumeSection.classList.add("hidden");
     }
 
-    // Links - paired display
-    renderPairedPreview();
+    // Portfolio (only existing links, no empty slots)
+    var gf = github.filter(function(l){ return l.label && l.url; });
+    var wf = website.filter(function(l){ return l.label && l.url; });
+    if (gf.length > 0 || wf.length > 0) {
+      previewPortfolioSection.classList.remove("hidden");
+      previewPortfolio.innerHTML = "";
+
+      var ghCol = document.createElement("div");
+      ghCol.innerHTML = '<div class="portfolio-col-title">GitHub</div>';
+      gf.forEach(function(l) { ghCol.appendChild(makeLinkCard(l)); });
+
+      var wsCol = document.createElement("div");
+      wsCol.innerHTML = '<div class="portfolio-col-title">Websites</div>';
+      wf.forEach(function(l) { wsCol.appendChild(makeLinkCard(l)); });
+
+      previewPortfolio.appendChild(ghCol);
+      previewPortfolio.appendChild(wsCol);
+    } else {
+      previewPortfolioSection.classList.add("hidden");
+    }
+
+    // Accomplishments
+    var af = accomplishments.filter(function(a){ return a.text && a.text.trim(); });
+    if (af.length > 0) {
+      previewAccompSection.classList.remove("hidden");
+      previewAccomplishments.innerHTML = "";
+      af.forEach(function(a) {
+        var item = document.createElement("div");
+        item.className = "accomplishment-item";
+        item.innerHTML = '<span class="accomplishment-bullet"></span><span>' + escHtml(a.text) + '</span>';
+        previewAccomplishments.appendChild(item);
+      });
+    } else {
+      previewAccompSection.classList.add("hidden");
+    }
   }
 
-  function renderPairedPreview() {
-    previewPairedLinks.innerHTML = "";
-    const gf = github.filter(l => l.label || l.url);
-    const wf = website.filter(l => l.label || l.url);
-    const max = Math.max(gf.length, wf.length);
-    if (!max) {
-      previewPairedLinks.innerHTML = '<div class="muted">No links saved.</div>';
-      return;
-    }
-    for (let i = 0; i < max; i++) {
-      const row = document.createElement("div");
-      row.className = "paired-row";
-      row.appendChild(makeLinkCell(gf[i]));
-      row.appendChild(makeLinkCell(wf[i]));
-      previewPairedLinks.appendChild(row);
-    }
-  }
-
-  function makeLinkCell(l) {
-    const div = document.createElement("div");
-    if (!l) { div.innerHTML = '<div class="link-item" style="visibility:hidden">&nbsp;</div>'; return div; }
-    const a = document.createElement("a");
-    a.className = "link-item";
+  function makeLinkCard(l) {
+    var a = document.createElement("a");
+    a.className = "link-card";
     a.href = l.url || "#";
     a.target = "_blank";
     a.rel = "noreferrer";
-    a.innerHTML =
-      '<div class="link-label">' + escHtml(l.label) + '</div>' +
-      '<div class="link-url">' + escHtml(l.url) + '</div>';
-    div.appendChild(a);
-    return div;
+    a.innerHTML = '<span class="link-card-label">' + escHtml(l.label) + '</span>' +
+      '<span class="link-card-url">' + escHtml(l.url) + '</span>';
+    return a;
   }
 
   function escHtml(s) {
-    const d = document.createElement("div");
+    var d = document.createElement("div");
     d.textContent = s || "";
     return d.innerHTML;
   }
@@ -144,69 +199,65 @@
   /* ── Photo upload ─────────────────────────────────────────────── */
   function handlePhotoFile(file) {
     if (!file) return;
-    const fd = new FormData();
+    var fd = new FormData();
     fd.append("photo", file);
     fetch("/admin/api/photo", { method: "POST", body: fd })
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(() => {
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function() {
         photoExists = true;
         photoPreviewURL = "/assets/photo?" + Date.now();
         rebuildAdminPhoto();
         renderPreview();
       })
-      .catch(() => alert("Photo upload failed."));
+      .catch(function() { alert("Photo upload failed."); });
   }
 
-  if (photoInput) photoInput.addEventListener("change", e => handlePhotoFile(e.target.files[0]));
-  if (photoInputHidden) photoInputHidden.addEventListener("change", e => handlePhotoFile(e.target.files[0]));
+  if (photoInput) photoInput.addEventListener("change", function(e) { handlePhotoFile(e.target.files[0]); });
+  if (photoInputHidden) photoInputHidden.addEventListener("change", function(e) { handlePhotoFile(e.target.files[0]); });
 
-  /* Delete photo */
   function deletePhoto() {
     fetch("/admin/api/photo", { method: "DELETE" })
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(() => {
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function() {
         photoExists = false;
         photoPreviewURL = null;
         rebuildAdminPhoto();
         renderPreview();
       })
-      .catch(() => alert("Delete failed."));
+      .catch(function() { alert("Delete failed."); });
   }
 
   if (photoDeleteBtn) photoDeleteBtn.addEventListener("click", deletePhoto);
 
   function rebuildAdminPhoto() {
-    const wrap = document.querySelector(".admin-photo-frame");
+    var wrap = document.querySelector(".admin-photo-frame");
     if (!wrap) return;
     wrap.innerHTML = "";
     if (photoExists && photoPreviewURL) {
-      const del = document.createElement("button");
+      var del = document.createElement("button");
       del.className = "photo-delete";
       del.type = "button";
       del.setAttribute("aria-label", "Delete photo");
-      del.textContent = "×";
+      del.textContent = "\u00d7";
       del.addEventListener("click", deletePhoto);
-      const img = document.createElement("img");
+      var img = document.createElement("img");
       img.className = "profile-photo";
-      img.id = "adminPhotoPreview";
       img.src = photoPreviewURL;
       img.alt = "Profile photo";
       wrap.append(del, img);
     } else {
-      const ph = document.createElement("div");
+      var ph = document.createElement("div");
       ph.className = "photo-placeholder";
-      ph.id = "adminPhotoPlaceholder";
-      ph.innerHTML = '<div class="muted">No photo uploaded</div>';
-      const lbl = document.createElement("label");
-      lbl.className = "btn-outline file-btn";
+      ph.innerHTML = '<span class="muted">No photo</span>';
+      var lbl = document.createElement("label");
+      lbl.className = "btn-outline btn-sm file-btn";
       lbl.textContent = "Add photo";
-      const inp = document.createElement("input");
-      inp.id = "photoInput";
+      var inp = document.createElement("input");
       inp.type = "file";
       inp.accept = "image/*";
       inp.setAttribute("capture", "environment");
       inp.hidden = true;
-      inp.addEventListener("change", e => handlePhotoFile(e.target.files[0]));
+      inp.addEventListener("change", function(e) { handlePhotoFile(e.target.files[0]); });
       lbl.appendChild(inp);
       ph.appendChild(lbl);
       wrap.appendChild(ph);
@@ -215,17 +266,17 @@
 
   /* ── Resume upload ────────────────────────────────────────────── */
   if (resumeInput) {
-    resumeInput.addEventListener("change", e => {
-      const file = e.target.files[0];
+    resumeInput.addEventListener("change", function(e) {
+      var file = e.target.files[0];
       if (!file) return;
-      const locale = resumeLocale.value;
-      const fd = new FormData();
+      var locale = resumeLocale.value;
+      var fd = new FormData();
       fd.append("resume", file);
       fd.append("locale", locale);
       fetch("/admin/api/resume", { method: "POST", body: fd })
-        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-        .then(() => { refreshState(); })
-        .catch(() => alert("Resume upload failed."));
+        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function() { refreshState(); })
+        .catch(function() { alert("Resume upload failed."); });
     });
   }
 
@@ -235,54 +286,68 @@
       resumeListHint.innerHTML = "No resumes uploaded yet.";
       return;
     }
-    let html = '<div class="resume-list">';
-    resumes.forEach(r => {
+    var html = '<div class="resume-list">';
+    resumes.forEach(function(r) {
       html += '<div class="resume-list-item">' +
         '<span class="resume-locale-tag">' + escHtml(r.locale) + '</span>' +
         '<span>' + escHtml(r.filename) + '</span>' +
-        '<button type="button" class="remove-link" data-locale="' + escHtml(r.locale) + '">×</button>' +
+        '<button type="button" class="remove-link" data-locale="' + escHtml(r.locale) + '">\u00d7</button>' +
         '</div>';
     });
     html += '</div>';
     resumeListHint.innerHTML = html;
-
-    // Bind delete
-    resumeListHint.querySelectorAll("button[data-locale]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const loc = btn.dataset.locale;
+    resumeListHint.querySelectorAll("button[data-locale]").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        var loc = btn.dataset.locale;
         fetch("/admin/api/resume?locale=" + encodeURIComponent(loc), { method: "DELETE" })
-          .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-          .then(() => refreshState())
-          .catch(() => alert("Delete failed."));
+          .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+          .then(function() { refreshState(); })
+          .catch(function() { alert("Delete failed."); });
       });
     });
   }
 
-  /* ── Save links ───────────────────────────────────────────────── */
-  saveBtn.addEventListener("click", () => {
-    saveStatus.textContent = "Saving…";
-    fetch("/admin/api/links", {
+  /* ── Save all ─────────────────────────────────────────────────── */
+  saveBtn.addEventListener("click", function() {
+    saveStatus.textContent = "Saving\u2026";
+
+    // Save links and accomplishments in parallel
+    var p1 = fetch("/admin/api/links", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ github: github, website: website })
-    })
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(() => { saveStatus.textContent = "Saved!"; setTimeout(() => saveStatus.textContent = "", 2000); })
-      .catch(() => { saveStatus.textContent = "Error saving."; });
+    });
+
+    var p2 = fetch("/admin/api/accomplishments", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accomplishments: accomplishments })
+    });
+
+    Promise.all([p1, p2])
+      .then(function(responses) {
+        var allOk = responses.every(function(r){ return r.ok; });
+        if (!allOk) throw new Error();
+        saveStatus.textContent = "Saved!";
+        setTimeout(function(){ saveStatus.textContent = ""; }, 2000);
+      })
+      .catch(function() { saveStatus.textContent = "Error saving."; });
   });
 
   /* ── Refresh full state ───────────────────────────────────────── */
   function refreshState() {
     fetch("/admin/api/state")
-      .then(r => r.json())
-      .then(data => {
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
         photoExists = data.photo_exists;
         photoPreviewURL = photoExists ? "/assets/photo?" + Date.now() : null;
         resumes = data.resumes || [];
         github = data.github_links || [];
         website = data.website_links || [];
-        renderEditor(githubEditor, github, "github");
-        renderEditor(websiteEditor, website, "website");
+        accomplishments = data.accomplishments || [];
+        renderLinkEditor(githubEditor, github, "github");
+        renderLinkEditor(websiteEditor, website, "website");
+        renderAccompEditor();
         renderResumeList();
         rebuildAdminPhoto();
         renderPreview();
@@ -290,8 +355,9 @@
   }
 
   /* ── Init ──────────────────────────────────────────────────────── */
-  renderEditor(githubEditor, github, "github");
-  renderEditor(websiteEditor, website, "website");
+  renderLinkEditor(githubEditor, github, "github");
+  renderLinkEditor(websiteEditor, website, "website");
+  renderAccompEditor();
   renderResumeList();
   renderPreview();
 })();

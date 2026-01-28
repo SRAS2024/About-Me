@@ -20,7 +20,7 @@ from io import BytesIO
 
 from config import Config
 from i18n import babel, select_locale
-from models import db, LinkItem, ResumeFile, SitePhoto
+from models import db, Accomplishment, LinkItem, ResumeFile, SitePhoto
 from services.image_processing import compress_image
 
 
@@ -31,8 +31,15 @@ def create_app() -> Flask:
     db.init_app(app)
     babel.init_app(app, locale_selector=lambda: select_locale(app))
 
-    with app.app_context():
-        db.create_all()
+    # Defer table creation to first request so the app boots even if DB is momentarily unavailable
+    _tables_created = False
+
+    @app.before_request
+    def ensure_tables():
+        nonlocal _tables_created
+        if not _tables_created:
+            db.create_all()
+            _tables_created = True
 
     def is_logged_in() -> bool:
         return session.get("admin_authed") is True
@@ -43,29 +50,23 @@ def create_app() -> Flask:
             if not is_logged_in():
                 return redirect(url_for("admin_login", next=request.path))
             return fn(*args, **kwargs)
-
         return wrapper
 
     def normalize_locale(loc: str) -> str:
         loc = (loc or "").strip()
         if not loc:
             return app.config.get("BABEL_DEFAULT_LOCALE", "en")
-        # Allow en, pt, pt_BR, fr, etc; sanitize
-        if not re.fullmatch(r"[A-Za-z]{2}([_-][A-Za-z]{2})?", loc):
+        if not re.fullmatch(r"[A-Za-z]{2}([_-][A-Za-z]{2,4})?", loc):
             return app.config.get("BABEL_DEFAULT_LOCALE", "en")
         return loc.replace("-", "_")
 
     def best_resume_locale() -> str:
-        # Prefer exact supported locales if uploaded
         available = [r.locale for r in ResumeFile.query.all()]
         if not available:
             return app.config.get("BABEL_DEFAULT_LOCALE", "en")
-
         best = request.accept_languages.best_match(available)
         if best:
             return best
-
-        # Also try base language match (pt vs pt_BR)
         accept = [lang for lang, _q in request.accept_languages]
         for lang in accept:
             base = lang.split("-")[0].split("_")[0]
@@ -81,20 +82,28 @@ def create_app() -> Flask:
             .all()
         )
         return [
-            {"id": i.id, "kind": i.kind, "label": i.label, "url": i.url, "sort_order": i.sort_order, "pair_index": i.pair_index}
+            {"id": i.id, "kind": i.kind, "label": i.label, "url": i.url,
+             "sort_order": i.sort_order, "pair_index": i.pair_index}
             for i in items
         ]
+
+    def get_accomplishments() -> List[Dict[str, Any]]:
+        items = Accomplishment.query.order_by(
+            Accomplishment.sort_order.asc(), Accomplishment.created_at.asc()
+        ).all()
+        return [{"id": a.id, "text": a.text, "sort_order": a.sort_order} for a in items]
+
+    # ── Public Routes ─────────────────────────────────────────────
 
     @app.get("/")
     def index():
         photo_exists = SitePhoto.query.first() is not None
         locale = select_locale(app)
-
         resume_locale = best_resume_locale()
         has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
-
         github_links = get_links("github")
         website_links = get_links("website")
+        accomplishments = get_accomplishments()
 
         return render_template(
             "index.html",
@@ -104,6 +113,7 @@ def create_app() -> Flask:
             has_resume=has_resume,
             github_links=github_links,
             website_links=website_links,
+            accomplishments=accomplishments,
         )
 
     @app.get("/assets/photo")
@@ -118,26 +128,24 @@ def create_app() -> Flask:
         requested = normalize_locale(request.args.get("locale", ""))
         resume = ResumeFile.query.filter_by(locale=requested).first()
         if not resume:
-            # Choose best based on browser language
             best = best_resume_locale()
             resume = ResumeFile.query.filter_by(locale=best).first()
         if not resume:
             abort(404)
         return send_file(BytesIO(resume.bytes), mimetype=resume.mimetype, download_name=resume.filename)
 
+    # ── Admin Routes ──────────────────────────────────────────────
+
     @app.get("/admin")
     @login_required
     def admin():
         photo_exists = SitePhoto.query.first() is not None
         locale = select_locale(app)
-
-        # Provide current best resume locale for preview; admin can upload others
         resume_locale = best_resume_locale()
         has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
-
         github_links = get_links("github")
         website_links = get_links("website")
-
+        accomplishments = get_accomplishments()
         resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
         resumes_list = [{"locale": r.locale, "filename": r.filename} for r in resumes]
 
@@ -149,6 +157,7 @@ def create_app() -> Flask:
             has_resume=has_resume,
             github_links=github_links,
             website_links=website_links,
+            accomplishments=accomplishments,
             resumes=resumes_list,
             supported_locales=app.config.get("BABEL_SUPPORTED_LOCALES", ["en"]),
         )
@@ -163,11 +172,9 @@ def create_app() -> Flask:
     def admin_login_post():
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
-
         if username == app.config["ADMIN_USERNAME"] and password == app.config["ADMIN_PASSWORD"]:
             session["admin_authed"] = True
             return redirect(request.form.get("next") or url_for("admin"))
-
         return render_template("admin_login.html", next=request.form.get("next", "/admin"), error=_("Invalid login."))
 
     @app.post("/admin/logout")
@@ -175,43 +182,33 @@ def create_app() -> Flask:
         session.clear()
         return redirect(url_for("index"))
 
-    # Admin APIs
+    # ── Admin APIs ────────────────────────────────────────────────
 
     @app.get("/admin/api/state")
     @login_required
     def admin_state():
         photo_exists = SitePhoto.query.first() is not None
         resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
-        return jsonify(
-            {
-                "photo_exists": photo_exists,
-                "resumes": [{"locale": r.locale, "filename": r.filename} for r in resumes],
-                "github_links": get_links("github"),
-                "website_links": get_links("website"),
-            }
-        )
+        return jsonify({
+            "photo_exists": photo_exists,
+            "resumes": [{"locale": r.locale, "filename": r.filename} for r in resumes],
+            "github_links": get_links("github"),
+            "website_links": get_links("website"),
+            "accomplishments": get_accomplishments(),
+        })
 
     @app.post("/admin/api/photo")
     @login_required
     def admin_upload_photo():
         if "photo" not in request.files:
             abort(400)
-
         f = request.files["photo"]
         raw = f.read()
         if not raw:
             abort(400)
-
         out_bytes, mimetype = compress_image(raw, tinify_api_key=app.config.get("TINIFY_API_KEY", ""))
-
         SitePhoto.query.delete()
-        db.session.add(
-            SitePhoto(
-                filename=(f.filename or "profile.jpg"),
-                mimetype=mimetype,
-                bytes=out_bytes,
-            )
-        )
+        db.session.add(SitePhoto(filename=(f.filename or "profile.jpg"), mimetype=mimetype, bytes=out_bytes))
         db.session.commit()
         return jsonify({"ok": True})
 
@@ -231,24 +228,15 @@ def create_app() -> Flask:
         raw = f.read()
         if not raw:
             abort(400)
-
         locale = normalize_locale(request.form.get("locale", ""))
         mimetype = f.mimetype or "application/pdf"
-
         existing = ResumeFile.query.filter_by(locale=locale).first()
         if existing:
             existing.filename = f.filename or f"resume_{locale}.pdf"
             existing.mimetype = mimetype
             existing.bytes = raw
         else:
-            db.session.add(
-                ResumeFile(
-                    locale=locale,
-                    filename=f.filename or f"resume_{locale}.pdf",
-                    mimetype=mimetype,
-                    bytes=raw,
-                )
-            )
+            db.session.add(ResumeFile(locale=locale, filename=f.filename or f"resume_{locale}.pdf", mimetype=mimetype, bytes=raw))
         db.session.commit()
         return jsonify({"ok": True})
 
@@ -268,9 +256,7 @@ def create_app() -> Flask:
         website = data.get("website", [])
 
         def validate_list(items: Any, kind: str) -> List[Dict[str, str]]:
-            if not isinstance(items, list):
-                abort(400)
-            if len(items) > 5:
+            if not isinstance(items, list) or len(items) > 5:
                 abort(400)
             out: List[Dict[str, str]] = []
             for it in items:
@@ -288,7 +274,6 @@ def create_app() -> Flask:
         github_list = validate_list(github, "github")
         website_list = validate_list(website, "website")
 
-        # Replace all of each kind
         LinkItem.query.filter_by(kind="github").delete()
         LinkItem.query.filter_by(kind="website").delete()
 
@@ -297,6 +282,28 @@ def create_app() -> Flask:
         for idx, it in enumerate(website_list):
             db.session.add(LinkItem(kind="website", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
 
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    @app.put("/admin/api/accomplishments")
+    @login_required
+    def admin_save_accomplishments():
+        data = request.get_json(force=True, silent=False)
+        items = data.get("accomplishments", [])
+        if not isinstance(items, list) or len(items) > 20:
+            abort(400)
+        validated = []
+        for it in items:
+            if not isinstance(it, dict):
+                abort(400)
+            text = (it.get("text") or "").strip()
+            if not text or len(text) > 500:
+                abort(400)
+            validated.append(text)
+
+        Accomplishment.query.delete()
+        for idx, text in enumerate(validated):
+            db.session.add(Accomplishment(text=text, sort_order=idx))
         db.session.commit()
         return jsonify({"ok": True})
 

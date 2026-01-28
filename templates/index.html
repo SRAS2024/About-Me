@@ -1,78 +1,96 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="hero card">
-  <div class="hero-left">
-    <div class="kicker">About</div>
-    <h1>Professional. Reliable. Customer focused.</h1>
-    <p class="lead">
-      Full stack engineer with hands on production builds and a strong customer facing technical background.
-      I ship clean systems, document well, and troubleshoot across the stack.
-    </p>
 
-    <div class="cta-row">
-      {% if has_resume %}
-        <a class="btn" href="{{ url_for('asset_resume') }}">Download Resume</a>
-      {% else %}
-        <span class="muted">Resume not uploaded yet.</span>
-      {% endif %}
-      <a class="btn-outline" href="#links">Links</a>
-    </div>
-  </div>
+<!-- ── Name Banner ──────────────────────────────────────────── -->
+<section class="name-banner">
+  <h1 class="name-title">Samuel Ryan Andrew Simonds</h1>
+  <p class="name-subtitle">Full Stack Engineer</p>
+</section>
 
-  <div class="hero-right">
-    <div class="photo-frame">
-      {% if photo_exists %}
-        <img class="profile-photo" src="{{ url_for('asset_photo') }}" alt="Profile photo" />
-      {% else %}
-        <div class="photo-placeholder">
-          <div class="muted">No photo uploaded</div>
+<!-- ── About / Hero ────────────────────────────────────────── -->
+<section class="section-wrap" id="about">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content">
+        <div class="section-label" data-i18n="about">About</div>
+        <p class="hero-tagline">Professional. Reliable. Customer focused.</p>
+        <p class="hero-desc">
+          Full stack engineer with hands-on production builds and a strong customer-facing technical background.
+          I ship clean systems, document well, and troubleshoot across the stack.
+        </p>
+      </div>
+      <div class="hero-photo">
+        <div class="photo-frame">
+          {% if photo_exists %}
+            <img class="profile-photo" src="{{ url_for('asset_photo') }}" alt="Samuel Ryan Andrew Simonds" />
+          {% else %}
+            <div class="photo-placeholder">
+              <span class="muted" data-i18n="noPhoto">No photo uploaded</span>
+            </div>
+          {% endif %}
         </div>
-      {% endif %}
+      </div>
     </div>
   </div>
 </section>
 
-<section id="links">
-  {% if github_links|length > 0 or website_links|length > 0 %}
-    <div class="section-title" style="margin-bottom:20px">Links</div>
-    <div class="paired-links">
-      {% set max_len = [github_links|length, website_links|length]|max %}
-      {% for i in range(max_len) %}
-        <div class="paired-row">
-          <div>
-            {% if i < github_links|length %}
-              <a class="link-item" href="{{ github_links[i].url }}" target="_blank" rel="noreferrer">
-                <div class="link-label">{{ github_links[i].label }}</div>
-                <div class="link-url">{{ github_links[i].url }}</div>
-              </a>
-            {% else %}
-              <div class="link-item" style="visibility:hidden">&nbsp;</div>
-            {% endif %}
-          </div>
-          <div>
-            {% if i < website_links|length %}
-              <a class="link-item" href="{{ website_links[i].url }}" target="_blank" rel="noreferrer">
-                <div class="link-label">{{ website_links[i].label }}</div>
-                <div class="link-url">{{ website_links[i].url }}</div>
-              </a>
-            {% else %}
-              <div class="link-item" style="visibility:hidden">&nbsp;</div>
-            {% endif %}
-          </div>
+<!-- ── Resume ──────────────────────────────────────────────── -->
+{% if has_resume %}
+<section class="section-wrap section-sage" id="resume">
+  <div class="container text-center">
+    <div class="section-label" data-i18n="resume">Resume</div>
+    <a class="btn btn-lg" href="{{ url_for('asset_resume') }}" data-i18n="download">Download Resume</a>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── Portfolio (Paired Links) ────────────────────────────── -->
+{% if github_links|length > 0 or website_links|length > 0 %}
+<section class="section-wrap" id="portfolio">
+  <div class="container">
+    <div class="section-label text-center" data-i18n="portfolio">Portfolio</div>
+
+    <div class="portfolio-grid">
+      <!-- GitHub column -->
+      <div>
+        <div class="portfolio-col-title" data-i18n="github">GitHub</div>
+        {% for l in github_links %}
+          <a class="link-card" href="{{ l.url }}" target="_blank" rel="noreferrer">
+            <span class="link-card-label">{{ l.label }}</span>
+            <span class="link-card-url">{{ l.url }}</span>
+          </a>
+        {% endfor %}
+      </div>
+      <!-- Website column -->
+      <div>
+        <div class="portfolio-col-title" data-i18n="websites">Websites</div>
+        {% for l in website_links %}
+          <a class="link-card" href="{{ l.url }}" target="_blank" rel="noreferrer">
+            <span class="link-card-label">{{ l.label }}</span>
+            <span class="link-card-url">{{ l.url }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── Accomplishments ─────────────────────────────────────── -->
+{% if accomplishments|length > 0 %}
+<section class="section-wrap section-dark" id="accomplishments">
+  <div class="container">
+    <div class="section-label text-center section-label-light" data-i18n="accomplishments">Accomplishments</div>
+    <div class="accomplishment-list">
+      {% for a in accomplishments %}
+        <div class="accomplishment-item">
+          <span class="accomplishment-bullet"></span>
+          <span>{{ a.text }}</span>
         </div>
       {% endfor %}
     </div>
-  {% else %}
-    <div class="grid">
-      <div class="card">
-        <div class="section-title">GitHub</div>
-        <div class="link-list"><div class="muted">No GitHub links saved.</div></div>
-      </div>
-      <div class="card">
-        <div class="section-title">Websites</div>
-        <div class="link-list"><div class="muted">No website links saved.</div></div>
-      </div>
-    </div>
-  {% endif %}
+  </div>
 </section>
+{% endif %}
+
 {% endblock %}
