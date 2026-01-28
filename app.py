@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import re
-from functools import wraps
-from typing import Any, Dict, List, Optional, Tuple
-
 import logging
 import os
+import re
+import traceback
+from functools import wraps
+from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import (
     Flask,
@@ -19,12 +20,13 @@ from flask import (
     url_for,
 )
 from flask_babel import gettext as _
-from io import BytesIO
 
 from config import Config
 from i18n import babel, select_locale
 from models import db, Accomplishment, LinkItem, ResumeFile, SitePhoto
 from services.image_processing import compress_image
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> Flask:
@@ -34,19 +36,15 @@ def create_app() -> Flask:
     db.init_app(app)
     babel.init_app(app, locale_selector=lambda: select_locale(app))
 
-    # Defer table creation to first request so the app boots even if DB is momentarily unavailable
-    _tables_created = False
-
-    @app.before_request
-    def ensure_tables():
-        nonlocal _tables_created
-        if not _tables_created:
-            try:
-                db.create_all()
-                _tables_created = True
-            except Exception as exc:
-                db.session.rollback()
-                app.logger.error("Failed to create database tables: %s", exc)
+    # Create tables at startup inside the app context.
+    # This is the standard Flask-SQLAlchemy pattern and guarantees tables
+    # exist before any request arrives.
+    with app.app_context():
+        try:
+            db.create_all()
+            logger.info("Database tables created / verified successfully")
+        except Exception as exc:
+            logger.error("Could not create database tables at startup: %s\n%s", exc, traceback.format_exc())
 
     def is_logged_in() -> bool:
         return session.get("admin_authed") is True
@@ -125,7 +123,7 @@ def create_app() -> Flask:
             accomplishments = get_accomplishments()
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Database unavailable on /: %s", exc)
+            app.logger.error("Database unavailable on /: %s\n%s", exc, traceback.format_exc())
             return render_template(
                 "index.html",
                 locale=locale,
@@ -183,7 +181,7 @@ def create_app() -> Flask:
             resumes_list = [{"locale": r.locale, "filename": r.filename} for r in resumes]
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Database unavailable on /admin: %s", exc)
+            app.logger.error("Database unavailable on /admin: %s\n%s", exc, traceback.format_exc())
             photo_exists = False
             resume_locale = "en"
             has_resume = False
@@ -242,7 +240,7 @@ def create_app() -> Flask:
             })
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Database unavailable on /admin/api/state: %s", exc)
+            app.logger.error("Database unavailable on /admin/api/state: %s\n%s", exc, traceback.format_exc())
             return jsonify({
                 "photo_exists": False,
                 "resumes": [],
@@ -267,7 +265,7 @@ def create_app() -> Flask:
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Photo upload failed: %s", exc)
+            app.logger.error("Photo upload failed: %s\n%s", exc, traceback.format_exc())
             return jsonify({"ok": False, "error": "Photo upload failed"}), 500
         return jsonify({"ok": True})
 
@@ -279,7 +277,7 @@ def create_app() -> Flask:
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Photo delete failed: %s", exc)
+            app.logger.error("Photo delete failed: %s\n%s", exc, traceback.format_exc())
             return jsonify({"ok": False, "error": "Delete failed"}), 500
         return jsonify({"ok": True})
 
@@ -305,7 +303,7 @@ def create_app() -> Flask:
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Resume upload failed: %s", exc)
+            app.logger.error("Resume upload failed: %s\n%s", exc, traceback.format_exc())
             return jsonify({"ok": False, "error": "Resume upload failed"}), 500
         return jsonify({"ok": True})
 
@@ -318,7 +316,7 @@ def create_app() -> Flask:
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Resume delete failed: %s", exc)
+            app.logger.error("Resume delete failed: %s\n%s", exc, traceback.format_exc())
             return jsonify({"ok": False, "error": "Delete failed"}), 500
         return jsonify({"ok": True})
 
@@ -360,7 +358,7 @@ def create_app() -> Flask:
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Links save failed: %s", exc)
+            app.logger.error("Links save failed: %s\n%s", exc, traceback.format_exc())
             return jsonify({"ok": False, "error": "Save failed"}), 500
         return jsonify({"ok": True})
 
@@ -387,7 +385,7 @@ def create_app() -> Flask:
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Accomplishments save failed: %s", exc)
+            app.logger.error("Accomplishments save failed: %s\n%s", exc, traceback.format_exc())
             return jsonify({"ok": False, "error": "Save failed"}), 500
         return jsonify({"ok": True})
 
