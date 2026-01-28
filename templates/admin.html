@@ -5,7 +5,7 @@
   <!-- ── LEFT: Controls ───────────────────────────────────────── -->
   <div class="admin-controls card">
     <div class="section-label">Admin Controls</div>
-    <p class="muted">Manage your photo, resumes, portfolio links, and accomplishments.</p>
+    <p class="muted">Manage your photo, resumes, portfolio links, traits, and accomplishments.</p>
 
     <!-- Photo -->
     <div class="admin-block">
@@ -50,6 +50,16 @@
       <div id="resumeListHint" class="muted small" style="margin-top:10px"></div>
     </div>
 
+    <!-- Traits -->
+    <div class="admin-block">
+      <div class="admin-block-title">Traits <span class="muted">(max 6)</span></div>
+      <div id="traitsEditor" class="link-editor"></div>
+      <button class="btn-outline btn-sm" id="addTraitBtn" type="button">+ Add trait</button>
+      <p class="muted small" style="margin-top:10px">
+        These appear as the short badges under your tagline on the public site.
+      </p>
+    </div>
+
     <!-- GitHub Links -->
     <div class="admin-block">
       <div class="admin-block-title">GitHub Links <span class="muted">(max 5)</span></div>
@@ -83,18 +93,15 @@
     <div class="section-label">Live Preview</div>
     <div class="preview-frame">
 
-      <!-- Name banner -->
-      <div class="name-banner preview-name-banner">
-        <h1 class="name-title">Samuel Ryan Andrew Simonds</h1>
-        <p class="name-subtitle">Full Stack Engineer</p>
-      </div>
-
       <!-- About / Hero -->
       <div class="preview-section">
         <div class="hero-grid">
           <div class="hero-content">
             <div class="section-label">About</div>
             <p class="hero-tagline">Professional. Reliable. Customer focused.</p>
+
+            <div class="traits" id="previewTraits" aria-label="Preview traits"></div>
+
             <p class="hero-desc">Full stack engineer with hands-on production builds and a strong customer-facing technical background.</p>
           </div>
           <div class="hero-photo">
@@ -110,9 +117,15 @@
 
       <!-- Resume -->
       <div class="preview-section preview-sage" id="previewResumeSection">
-        <div class="text-center">
-          <div class="section-label">Resume</div>
-          <a class="btn" href="/assets/resume" id="previewResumeBtn">Download Resume</a>
+        <div class="section-label text-center">Resume</div>
+        <div class="resume-viewer">
+          <iframe
+            class="resume-embed"
+            title="Resume preview"
+            id="previewResumeFrame"
+            src="/assets/resume#view=FitH"
+            loading="lazy"
+          ></iframe>
         </div>
       </div>
 
@@ -137,6 +150,7 @@
   window.__INITIAL__ = {
     github: {{ github_links|tojson }},
     website: {{ website_links|tojson }},
+    traits: {{ (traits if traits is defined else [])|tojson }},
     photoExists: {{ 'true' if photo_exists else 'false' }},
     resumeLocale: {{ resume_locale|tojson }},
     hasResume: {{ 'true' if has_resume else 'false' }},
