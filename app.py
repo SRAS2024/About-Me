@@ -26,7 +26,7 @@ from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from config import Config
 from i18n import babel, select_locale
-from models import db, Accomplishment, LinkItem, ResumeFile, SitePhoto
+from models import db, Accomplishment, LinkItem, ResumeFile, SitePhoto, Trait
 from services.image_processing import compress_image
 
 logger = logging.getLogger(__name__)
@@ -102,6 +102,10 @@ def create_app() -> Flask:
         ).all()
         return [{"id": a.id, "text": a.text, "sort_order": a.sort_order} for a in items]
 
+    def get_traits() -> List[str]:
+        items = Trait.query.order_by(Trait.sort_order.asc(), Trait.created_at.asc()).all()
+        return [t.text for t in items]
+
     def db_ping() -> tuple[bool, str]:
         """
         Returns (ok, message). Message is safe to show in UI.
@@ -124,14 +128,17 @@ def create_app() -> Flask:
         if ok:
             return None
         app.logger.error("Database not available: %s", msg)
-        return jsonify(
-            {
-                "ok": False,
-                "error": "Database is not available",
-                "detail": msg,
-                "hint": "Verify DATABASE_URL is set for this Railway service and points to the attached Postgres.",
-            }
-        ), 503
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "Database is not available",
+                    "detail": msg,
+                    "hint": "Verify DATABASE_URL is set for this Railway service and points to the attached Postgres.",
+                }
+            ),
+            503,
+        )
 
     # ── Startup logging ────────────────────────────────────────────
     port = os.environ.get("PORT", "8000")
@@ -160,7 +167,7 @@ def create_app() -> Flask:
     @app.get("/health")
     def health():
         ok, msg = db_ping()
-        return jsonify({"status": "ok", "db_ok": ok, "db": msg}), (200 if ok else 200)
+        return jsonify({"status": "ok", "db_ok": ok, "db": msg}), 200
 
     # ── Public Routes ─────────────────────────────────────────────
 
@@ -174,6 +181,7 @@ def create_app() -> Flask:
             github_links = get_links("github")
             website_links = get_links("website")
             accomplishments = get_accomplishments()
+            traits = get_traits()
         except Exception as exc:
             db.session.rollback()
             app.logger.error("Database unavailable on /: %s\n%s", exc, traceback.format_exc())
@@ -186,6 +194,7 @@ def create_app() -> Flask:
                 github_links=[],
                 website_links=[],
                 accomplishments=[],
+                traits=[],
             )
 
         return render_template(
@@ -197,6 +206,7 @@ def create_app() -> Flask:
             github_links=github_links,
             website_links=website_links,
             accomplishments=accomplishments,
+            traits=traits,
         )
 
     @app.get("/assets/photo")
@@ -230,6 +240,7 @@ def create_app() -> Flask:
             github_links = get_links("github")
             website_links = get_links("website")
             accomplishments = get_accomplishments()
+            traits = get_traits()
             resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
             resumes_list = [{"locale": r.locale, "filename": r.filename} for r in resumes]
         except Exception as exc:
@@ -241,6 +252,7 @@ def create_app() -> Flask:
             github_links = []
             website_links = []
             accomplishments = []
+            traits = []
             resumes_list = []
 
         return render_template(
@@ -252,6 +264,7 @@ def create_app() -> Flask:
             github_links=github_links,
             website_links=website_links,
             accomplishments=accomplishments,
+            traits=traits,
             resumes=resumes_list,
             supported_locales=app.config.get("BABEL_SUPPORTED_LOCALES", ["en"]),
         )
@@ -298,6 +311,7 @@ def create_app() -> Flask:
                     "github_links": get_links("github"),
                     "website_links": get_links("website"),
                     "accomplishments": get_accomplishments(),
+                    "traits": get_traits(),
                 }
             )
         except Exception as exc:
@@ -308,6 +322,50 @@ def create_app() -> Flask:
                     {
                         "ok": False,
                         "error": "Failed to load admin state",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
+
+    @app.put("/admin/api/traits")
+    @login_required
+    def admin_save_traits():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+
+        data = request.get_json(force=True, silent=False) or {}
+        items = data.get("traits", [])
+
+        if not isinstance(items, list) or len(items) > 6:
+            return jsonify({"ok": False, "error": "Invalid traits list"}), 400
+
+        cleaned: List[str] = []
+        for t in items:
+            if not isinstance(t, str):
+                return jsonify({"ok": False, "error": "Traits must be strings"}), 400
+            val = t.strip()
+            if not val:
+                continue
+            if len(val) > 60:
+                return jsonify({"ok": False, "error": "Trait too long (max 60 chars)"}), 400
+            cleaned.append(val)
+
+        try:
+            Trait.query.delete()
+            for idx, val in enumerate(cleaned):
+                db.session.add(Trait(text=val, sort_order=idx))
+            db.session.commit()
+            return jsonify({"ok": True})
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Traits save failed: %s\n%s", exc, traceback.format_exc())
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Save failed",
                         "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
                     }
                 ),
