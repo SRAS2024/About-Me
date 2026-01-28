@@ -32,37 +32,47 @@
   </div>
 </section>
 
-<section id="links" class="grid">
-  <div class="card">
-    <div class="section-title">GitHub</div>
-    <div class="link-list">
-      {% if github_links|length == 0 %}
-        <div class="muted">No GitHub links saved.</div>
-      {% else %}
-        {% for l in github_links %}
-          <a class="link-item" href="{{ l.url }}" target="_blank" rel="noreferrer">
-            <div class="link-label">{{ l.label }}</div>
-            <div class="link-url">{{ l.url }}</div>
-          </a>
-        {% endfor %}
-      {% endif %}
+<section id="links">
+  {% if github_links|length > 0 or website_links|length > 0 %}
+    <div class="section-title" style="margin-bottom:20px">Links</div>
+    <div class="paired-links">
+      {% set max_len = [github_links|length, website_links|length]|max %}
+      {% for i in range(max_len) %}
+        <div class="paired-row">
+          <div>
+            {% if i < github_links|length %}
+              <a class="link-item" href="{{ github_links[i].url }}" target="_blank" rel="noreferrer">
+                <div class="link-label">{{ github_links[i].label }}</div>
+                <div class="link-url">{{ github_links[i].url }}</div>
+              </a>
+            {% else %}
+              <div class="link-item" style="visibility:hidden">&nbsp;</div>
+            {% endif %}
+          </div>
+          <div>
+            {% if i < website_links|length %}
+              <a class="link-item" href="{{ website_links[i].url }}" target="_blank" rel="noreferrer">
+                <div class="link-label">{{ website_links[i].label }}</div>
+                <div class="link-url">{{ website_links[i].url }}</div>
+              </a>
+            {% else %}
+              <div class="link-item" style="visibility:hidden">&nbsp;</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
     </div>
-  </div>
-
-  <div class="card">
-    <div class="section-title">Websites</div>
-    <div class="link-list">
-      {% if website_links|length == 0 %}
-        <div class="muted">No website links saved.</div>
-      {% else %}
-        {% for l in website_links %}
-          <a class="link-item" href="{{ l.url }}" target="_blank" rel="noreferrer">
-            <div class="link-label">{{ l.label }}</div>
-            <div class="link-url">{{ l.url }}</div>
-          </a>
-        {% endfor %}
-      {% endif %}
+  {% else %}
+    <div class="grid">
+      <div class="card">
+        <div class="section-title">GitHub</div>
+        <div class="link-list"><div class="muted">No GitHub links saved.</div></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Websites</div>
+        <div class="link-list"><div class="muted">No website links saved.</div></div>
+      </div>
     </div>
-  </div>
+  {% endif %}
 </section>
 {% endblock %}

@@ -81,7 +81,7 @@ def create_app() -> Flask:
             .all()
         )
         return [
-            {"id": i.id, "kind": i.kind, "label": i.label, "url": i.url, "sort_order": i.sort_order}
+            {"id": i.id, "kind": i.kind, "label": i.label, "url": i.url, "sort_order": i.sort_order, "pair_index": i.pair_index}
             for i in items
         ]
 
@@ -138,6 +138,9 @@ def create_app() -> Flask:
         github_links = get_links("github")
         website_links = get_links("website")
 
+        resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
+        resumes_list = [{"locale": r.locale, "filename": r.filename} for r in resumes]
+
         return render_template(
             "admin.html",
             locale=locale,
@@ -146,6 +149,7 @@ def create_app() -> Flask:
             has_resume=has_resume,
             github_links=github_links,
             website_links=website_links,
+            resumes=resumes_list,
             supported_locales=app.config.get("BABEL_SUPPORTED_LOCALES", ["en"]),
         )
 
@@ -289,9 +293,9 @@ def create_app() -> Flask:
         LinkItem.query.filter_by(kind="website").delete()
 
         for idx, it in enumerate(github_list):
-            db.session.add(LinkItem(kind="github", label=it["label"], url=it["url"], sort_order=idx))
+            db.session.add(LinkItem(kind="github", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
         for idx, it in enumerate(website_list):
-            db.session.add(LinkItem(kind="website", label=it["label"], url=it["url"], sort_order=idx))
+            db.session.add(LinkItem(kind="website", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
 
         db.session.commit()
         return jsonify({"ok": True})

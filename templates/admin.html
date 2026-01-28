@@ -94,15 +94,9 @@
         </div>
       </section>
 
-      <section id="previewLinks" class="grid">
-        <div class="card">
-          <div class="section-title">GitHub</div>
-          <div class="link-list" id="previewGithub"></div>
-        </div>
-        <div class="card">
-          <div class="section-title">Websites</div>
-          <div class="link-list" id="previewWebsites"></div>
-        </div>
+      <section id="previewLinks">
+        <div class="section-title" style="margin-bottom:16px">Links</div>
+        <div class="paired-links" id="previewPairedLinks"></div>
       </section>
     </div>
   </div>
@@ -114,7 +108,8 @@
     website: {{ website_links|tojson }},
     photoExists: {{ 'true' if photo_exists else 'false' }},
     resumeLocale: {{ resume_locale|tojson }},
-    hasResume: {{ 'true' if has_resume else 'false' }}
+    hasResume: {{ 'true' if has_resume else 'false' }},
+    resumes: {{ resumes|tojson }}
   };
 </script>
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
