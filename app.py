@@ -45,6 +45,7 @@ def create_app() -> Flask:
                 db.create_all()
                 _tables_created = True
             except Exception as exc:
+                db.session.rollback()
                 app.logger.error("Failed to create database tables: %s", exc)
 
     def is_logged_in() -> bool:
@@ -169,15 +170,25 @@ def create_app() -> Flask:
     @app.get("/admin")
     @login_required
     def admin():
-        photo_exists = SitePhoto.query.first() is not None
         locale = select_locale(app)
-        resume_locale = best_resume_locale()
-        has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
-        github_links = get_links("github")
-        website_links = get_links("website")
-        accomplishments = get_accomplishments()
-        resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
-        resumes_list = [{"locale": r.locale, "filename": r.filename} for r in resumes]
+        try:
+            photo_exists = SitePhoto.query.first() is not None
+            resume_locale = best_resume_locale()
+            has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
+            github_links = get_links("github")
+            website_links = get_links("website")
+            accomplishments = get_accomplishments()
+            resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
+            resumes_list = [{"locale": r.locale, "filename": r.filename} for r in resumes]
+        except Exception as exc:
+            app.logger.error("Database unavailable on /admin: %s", exc)
+            photo_exists = False
+            resume_locale = "en"
+            has_resume = False
+            github_links = []
+            website_links = []
+            accomplishments = []
+            resumes_list = []
 
         return render_template(
             "admin.html",
@@ -217,15 +228,25 @@ def create_app() -> Flask:
     @app.get("/admin/api/state")
     @login_required
     def admin_state():
-        photo_exists = SitePhoto.query.first() is not None
-        resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
-        return jsonify({
-            "photo_exists": photo_exists,
-            "resumes": [{"locale": r.locale, "filename": r.filename} for r in resumes],
-            "github_links": get_links("github"),
-            "website_links": get_links("website"),
-            "accomplishments": get_accomplishments(),
-        })
+        try:
+            photo_exists = SitePhoto.query.first() is not None
+            resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
+            return jsonify({
+                "photo_exists": photo_exists,
+                "resumes": [{"locale": r.locale, "filename": r.filename} for r in resumes],
+                "github_links": get_links("github"),
+                "website_links": get_links("website"),
+                "accomplishments": get_accomplishments(),
+            })
+        except Exception as exc:
+            app.logger.error("Database unavailable on /admin/api/state: %s", exc)
+            return jsonify({
+                "photo_exists": False,
+                "resumes": [],
+                "github_links": [],
+                "website_links": [],
+                "accomplishments": [],
+            })
 
     @app.post("/admin/api/photo")
     @login_required
