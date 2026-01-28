@@ -4,6 +4,9 @@ import re
 from functools import wraps
 from typing import Any, Dict, List, Optional, Tuple
 
+import logging
+import os
+
 from flask import (
     Flask,
     abort,
@@ -38,8 +41,11 @@ def create_app() -> Flask:
     def ensure_tables():
         nonlocal _tables_created
         if not _tables_created:
-            db.create_all()
-            _tables_created = True
+            try:
+                db.create_all()
+                _tables_created = True
+            except Exception as exc:
+                app.logger.error("Failed to create database tables: %s", exc)
 
     def is_logged_in() -> bool:
         return session.get("admin_authed") is True
@@ -92,6 +98,17 @@ def create_app() -> Flask:
             Accomplishment.sort_order.asc(), Accomplishment.created_at.asc()
         ).all()
         return [{"id": a.id, "text": a.text, "sort_order": a.sort_order} for a in items]
+
+    # ── Startup logging ────────────────────────────────────────────
+    port = os.environ.get("PORT", "8000")
+    db_configured = bool(os.environ.get("DATABASE_URL"))
+    app.logger.info("Starting app on port %s | DATABASE_URL configured: %s", port, db_configured)
+
+    # ── Health check ─────────────────────────────────────────────
+
+    @app.get("/health")
+    def health():
+        return jsonify({"status": "ok"})
 
     # ── Public Routes ─────────────────────────────────────────────
 
