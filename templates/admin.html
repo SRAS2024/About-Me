@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="admin-grid">
+  <div class="card admin-panel">
+    <div class="section-title">Admin</div>
+    <p class="muted">Upload your photo and resumes, then manage up to five GitHub links and five website links.</p>
+
+    <div class="admin-block">
+      <div class="admin-block-title">Profile photo</div>
+      <div class="admin-photo-wrap">
+        <div class="photo-frame admin-photo-frame">
+          {% if photo_exists %}
+            <button class="photo-delete" id="photoDeleteBtn" type="button" aria-label="Delete photo">×</button>
+            <img class="profile-photo" id="adminPhotoPreview" src="{{ url_for('asset_photo') }}" alt="Profile photo" />
+          {% else %}
+            <div class="photo-placeholder" id="adminPhotoPlaceholder">
+              <div class="muted">No photo uploaded</div>
+              <label class="btn-outline file-btn">
+                Add photo
+                <input id="photoInput" type="file" accept="image/*" capture="environment" hidden />
+              </label>
+            </div>
+          {% endif %}
+          <input id="photoInputHidden" type="file" accept="image/*" capture="environment" hidden />
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-block">
+      <div class="admin-block-title">Resume upload</div>
+      <div class="row">
+        <div class="col">
+          <label class="label">Resume language (locale)</label>
+          <select class="input" id="resumeLocale">
+            {% for loc in supported_locales %}
+              <option value="{{ loc }}">{{ loc }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col">
+          <label class="label">PDF file</label>
+          <label class="btn-outline file-btn">
+            Add file
+            <input id="resumeInput" type="file" accept="application/pdf" hidden />
+          </label>
+        </div>
+      </div>
+
+      <div class="muted small" id="resumeListHint"></div>
+    </div>
+
+    <div class="admin-block">
+      <div class="admin-block-title">GitHub links (max 5)</div>
+      <div id="githubEditor" class="link-editor"></div>
+      <button class="btn-outline" id="addGithubBtn" type="button">Add GitHub link</button>
+    </div>
+
+    <div class="admin-block">
+      <div class="admin-block-title">Website links (max 5)</div>
+      <div id="websiteEditor" class="link-editor"></div>
+      <button class="btn-outline" id="addWebsiteBtn" type="button">Add website link</button>
+    </div>
+
+    <div class="admin-actions">
+      <button class="btn" id="saveBtn" type="button">Save changes</button>
+      <div class="muted small" id="saveStatus"></div>
+    </div>
+  </div>
+
+  <div class="card admin-preview">
+    <div class="section-title">Live preview</div>
+    <div class="preview-wrap">
+      <section class="hero card preview-hero">
+        <div class="hero-left">
+          <div class="kicker">About</div>
+          <h1>Professional. Reliable. Customer focused.</h1>
+          <p class="lead">
+            Full stack engineer with hands on production builds and a strong customer facing technical background.
+            I ship clean systems, document well, and troubleshoot across the stack.
+          </p>
+          <div class="cta-row">
+            <a class="btn" href="#" id="previewResumeBtn">Download Resume</a>
+            <a class="btn-outline" href="#previewLinks">Links</a>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="photo-frame">
+            <div class="photo-placeholder" id="previewPhotoPlaceholder">
+              <div class="muted">No photo uploaded</div>
+            </div>
+            <img class="profile-photo hidden" id="previewPhoto" alt="Preview photo" />
+          </div>
+        </div>
+      </section>
+
+      <section id="previewLinks" class="grid">
+        <div class="card">
+          <div class="section-title">GitHub</div>
+          <div class="link-list" id="previewGithub"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Websites</div>
+          <div class="link-list" id="previewWebsites"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<script>
+  window.__INITIAL__ = {
+    github: {{ github_links|tojson }},
+    website: {{ website_links|tojson }},
+    photoExists: {{ 'true' if photo_exists else 'false' }},
+    resumeLocale: {{ resume_locale|tojson }},
+    hasResume: {{ 'true' if has_resume else 'false' }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
