@@ -11,18 +11,20 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="container topbar-inner">
-        <div class="brand">
+      <div class="container topbar-inner topbar-center">
+        <div class="brand brand-center">
           <a href="{{ url_for('index') }}" class="brand-link">Samuel Ryan Andrew Simonds</a>
         </div>
-        <nav class="nav">
+
+        <nav class="nav nav-right">
           <a href="{{ url_for('index') }}">Home</a>
+
           {% if request.path.startswith('/admin') %}
-            <form method="post" action="{{ url_for('admin_logout') }}" class="inline">
-              <button type="submit" class="linklike">Log out</button>
-            </form>
-          {% else %}
-            <a href="{{ url_for('admin') }}">Admin</a>
+            {% if session.get('admin_authed') %}
+              <form method="post" action="{{ url_for('admin_logout') }}" class="inline">
+                <button type="submit" class="linklike">Log out</button>
+              </form>
+            {% endif %}
           {% endif %}
         </nav>
       </div>
