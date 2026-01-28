@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero card">
+  <div class="hero-left">
+    <div class="kicker">About</div>
+    <h1>Professional. Reliable. Customer focused.</h1>
+    <p class="lead">
+      Full stack engineer with hands on production builds and a strong customer facing technical background.
+      I ship clean systems, document well, and troubleshoot across the stack.
+    </p>
+
+    <div class="cta-row">
+      {% if has_resume %}
+        <a class="btn" href="{{ url_for('asset_resume') }}">Download Resume</a>
+      {% else %}
+        <span class="muted">Resume not uploaded yet.</span>
+      {% endif %}
+      <a class="btn-outline" href="#links">Links</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="photo-frame">
+      {% if photo_exists %}
+        <img class="profile-photo" src="{{ url_for('asset_photo') }}" alt="Profile photo" />
+      {% else %}
+        <div class="photo-placeholder">
+          <div class="muted">No photo uploaded</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section id="links" class="grid">
+  <div class="card">
+    <div class="section-title">GitHub</div>
+    <div class="link-list">
+      {% if github_links|length == 0 %}
+        <div class="muted">No GitHub links saved.</div>
+      {% else %}
+        {% for l in github_links %}
+          <a class="link-item" href="{{ l.url }}" target="_blank" rel="noreferrer">
+            <div class="link-label">{{ l.label }}</div>
+            <div class="link-url">{{ l.url }}</div>
+          </a>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Websites</div>
+    <div class="link-list">
+      {% if website_links|length == 0 %}
+        <div class="muted">No website links saved.</div>
+      {% else %}
+        {% for l in website_links %}
+          <a class="link-item" href="{{ l.url }}" target="_blank" rel="noreferrer">
+            <div class="link-label">{{ l.label }}</div>
+            <div class="link-url">{{ l.url }}</div>
+          </a>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
