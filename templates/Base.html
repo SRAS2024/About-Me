@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="{{ locale }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Samuel Ryan Simonds</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Samuel Ryan Simonds</div>
+          <div class="brand-subtitle">Full Stack Engineer</div>
+        </div>
+
+        <nav class="nav">
+          <a href="{{ url_for('index') }}">Home</a>
+          {% if request.path.startswith('/admin') %}
+            <form method="post" action="{{ url_for('admin_logout') }}" class="inline">
+              <button type="submit" class="linklike">Log out</button>
+            </form>
+          {% else %}
+            <a href="{{ url_for('admin') }}">Admin</a>
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div>© {{ 2026 }} Samuel Ryan Simonds</div>
+      </div>
+    </footer>
+  </body>
+</html>
