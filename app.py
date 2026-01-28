@@ -114,13 +114,26 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        photo_exists = SitePhoto.query.first() is not None
         locale = select_locale(app)
-        resume_locale = best_resume_locale()
-        has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
-        github_links = get_links("github")
-        website_links = get_links("website")
-        accomplishments = get_accomplishments()
+        try:
+            photo_exists = SitePhoto.query.first() is not None
+            resume_locale = best_resume_locale()
+            has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
+            github_links = get_links("github")
+            website_links = get_links("website")
+            accomplishments = get_accomplishments()
+        except Exception as exc:
+            app.logger.error("Database unavailable on /: %s", exc)
+            return render_template(
+                "index.html",
+                locale=locale,
+                photo_exists=False,
+                resume_locale="en",
+                has_resume=False,
+                github_links=[],
+                website_links=[],
+                accomplishments=[],
+            )
 
         return render_template(
             "index.html",
