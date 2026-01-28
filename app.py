@@ -6,7 +6,7 @@ import re
 import traceback
 from functools import wraps
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from flask import (
     Flask,
@@ -20,6 +20,9 @@ from flask import (
     url_for,
 )
 from flask_babel import gettext as _
+
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from config import Config
 from i18n import babel, select_locale
@@ -36,15 +39,9 @@ def create_app() -> Flask:
     db.init_app(app)
     babel.init_app(app, locale_selector=lambda: select_locale(app))
 
-    # Create tables at startup inside the app context.
-    # This is the standard Flask-SQLAlchemy pattern and guarantees tables
-    # exist before any request arrives.
-    with app.app_context():
-        try:
-            db.create_all()
-            logger.info("Database tables created / verified successfully")
-        except Exception as exc:
-            logger.error("Could not create database tables at startup: %s\n%s", exc, traceback.format_exc())
+    # Reasonable defaults for session cookies behind a proxy (Railway)
+    app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
+    app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
 
     def is_logged_in() -> bool:
         return session.get("admin_authed") is True
@@ -55,6 +52,7 @@ def create_app() -> Flask:
             if not is_logged_in():
                 return redirect(url_for("admin_login", next=request.path))
             return fn(*args, **kwargs)
+
         return wrapper
 
     def normalize_locale(loc: str) -> str:
@@ -87,8 +85,14 @@ def create_app() -> Flask:
             .all()
         )
         return [
-            {"id": i.id, "kind": i.kind, "label": i.label, "url": i.url,
-             "sort_order": i.sort_order, "pair_index": i.pair_index}
+            {
+                "id": i.id,
+                "kind": i.kind,
+                "label": i.label,
+                "url": i.url,
+                "sort_order": i.sort_order,
+                "pair_index": i.pair_index,
+            }
             for i in items
         ]
 
@@ -98,16 +102,65 @@ def create_app() -> Flask:
         ).all()
         return [{"id": a.id, "text": a.text, "sort_order": a.sort_order} for a in items]
 
+    def db_ping() -> tuple[bool, str]:
+        """
+        Returns (ok, message). Message is safe to show in UI.
+        """
+        try:
+            db.session.execute(text("SELECT 1"))
+            return True, "ok"
+        except OperationalError as exc:
+            db.session.rollback()
+            return False, f"database connection failed: {exc.__class__.__name__}"
+        except SQLAlchemyError as exc:
+            db.session.rollback()
+            return False, f"database error: {exc.__class__.__name__}"
+        except Exception as exc:
+            db.session.rollback()
+            return False, f"unexpected database error: {exc.__class__.__name__}"
+
+    def require_db_or_503():
+        ok, msg = db_ping()
+        if ok:
+            return None
+        app.logger.error("Database not available: %s", msg)
+        return jsonify(
+            {
+                "ok": False,
+                "error": "Database is not available",
+                "detail": msg,
+                "hint": "Verify DATABASE_URL is set for this Railway service and points to the attached Postgres.",
+            }
+        ), 503
+
     # ── Startup logging ────────────────────────────────────────────
     port = os.environ.get("PORT", "8000")
     db_configured = bool(os.environ.get("DATABASE_URL"))
     app.logger.info("Starting app on port %s | DATABASE_URL configured: %s", port, db_configured)
 
+    # Create tables at startup inside the app context.
+    with app.app_context():
+        try:
+            db.create_all()
+            logger.info("Database tables created or verified successfully")
+            ok, msg = db_ping()
+            if ok:
+                logger.info("Database ping ok at startup")
+            else:
+                logger.error("Database ping failed at startup: %s", msg)
+        except Exception as exc:
+            logger.error(
+                "Could not create database tables at startup: %s\n%s",
+                exc,
+                traceback.format_exc(),
+            )
+
     # ── Health check ─────────────────────────────────────────────
 
     @app.get("/health")
     def health():
-        return jsonify({"status": "ok"})
+        ok, msg = db_ping()
+        return jsonify({"status": "ok", "db_ok": ok, "db": msg}), (200 if ok else 200)
 
     # ── Public Routes ─────────────────────────────────────────────
 
@@ -216,7 +269,11 @@ def create_app() -> Flask:
         if username == app.config["ADMIN_USERNAME"] and password == app.config["ADMIN_PASSWORD"]:
             session["admin_authed"] = True
             return redirect(request.form.get("next") or url_for("admin"))
-        return render_template("admin_login.html", next=request.form.get("next", "/admin"), error=_("Invalid login."))
+        return render_template(
+            "admin_login.html",
+            next=request.form.get("next", "/admin"),
+            error=_("Invalid login."),
+        )
 
     @app.post("/admin/logout")
     def admin_logout():
@@ -228,70 +285,118 @@ def create_app() -> Flask:
     @app.get("/admin/api/state")
     @login_required
     def admin_state():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
         try:
             photo_exists = SitePhoto.query.first() is not None
             resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
-            return jsonify({
-                "photo_exists": photo_exists,
-                "resumes": [{"locale": r.locale, "filename": r.filename} for r in resumes],
-                "github_links": get_links("github"),
-                "website_links": get_links("website"),
-                "accomplishments": get_accomplishments(),
-            })
+            return jsonify(
+                {
+                    "photo_exists": photo_exists,
+                    "resumes": [{"locale": r.locale, "filename": r.filename} for r in resumes],
+                    "github_links": get_links("github"),
+                    "website_links": get_links("website"),
+                    "accomplishments": get_accomplishments(),
+                }
+            )
         except Exception as exc:
             db.session.rollback()
-            app.logger.error("Database unavailable on /admin/api/state: %s\n%s", exc, traceback.format_exc())
-            return jsonify({
-                "photo_exists": False,
-                "resumes": [],
-                "github_links": [],
-                "website_links": [],
-                "accomplishments": [],
-            })
+            app.logger.error("Database error on /admin/api/state: %s\n%s", exc, traceback.format_exc())
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Failed to load admin state",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
 
     @app.post("/admin/api/photo")
     @login_required
     def admin_upload_photo():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+
         if "photo" not in request.files:
-            abort(400)
+            return jsonify({"ok": False, "error": "Missing file field: photo"}), 400
+
         f = request.files["photo"]
         raw = f.read()
         if not raw:
-            abort(400)
+            return jsonify({"ok": False, "error": "Empty file"}), 400
+
         try:
             out_bytes, mimetype = compress_image(raw, tinify_api_key=app.config.get("TINIFY_API_KEY", ""))
             SitePhoto.query.delete()
-            db.session.add(SitePhoto(filename=(f.filename or "profile.jpg"), mimetype=mimetype, bytes=out_bytes))
+            db.session.add(
+                SitePhoto(
+                    filename=(f.filename or "profile.jpg"),
+                    mimetype=mimetype,
+                    bytes=out_bytes,
+                )
+            )
             db.session.commit()
+            return jsonify({"ok": True})
         except Exception as exc:
             db.session.rollback()
             app.logger.error("Photo upload failed: %s\n%s", exc, traceback.format_exc())
-            return jsonify({"ok": False, "error": "Photo upload failed"}), 500
-        return jsonify({"ok": True})
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Photo upload failed",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
 
     @app.delete("/admin/api/photo")
     @login_required
     def admin_delete_photo():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
         try:
             SitePhoto.query.delete()
             db.session.commit()
+            return jsonify({"ok": True})
         except Exception as exc:
             db.session.rollback()
             app.logger.error("Photo delete failed: %s\n%s", exc, traceback.format_exc())
-            return jsonify({"ok": False, "error": "Delete failed"}), 500
-        return jsonify({"ok": True})
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Delete failed",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
 
     @app.post("/admin/api/resume")
     @login_required
     def admin_upload_resume():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+
         if "resume" not in request.files:
-            abort(400)
+            return jsonify({"ok": False, "error": "Missing file field: resume"}), 400
+
         f = request.files["resume"]
         raw = f.read()
         if not raw:
-            abort(400)
+            return jsonify({"ok": False, "error": "Empty file"}), 400
+
         locale = normalize_locale(request.form.get("locale", ""))
         mimetype = f.mimetype or "application/pdf"
+
         try:
             existing = ResumeFile.query.filter_by(locale=locale).first()
             if existing:
@@ -299,30 +404,63 @@ def create_app() -> Flask:
                 existing.mimetype = mimetype
                 existing.bytes = raw
             else:
-                db.session.add(ResumeFile(locale=locale, filename=f.filename or f"resume_{locale}.pdf", mimetype=mimetype, bytes=raw))
+                db.session.add(
+                    ResumeFile(
+                        locale=locale,
+                        filename=f.filename or f"resume_{locale}.pdf",
+                        mimetype=mimetype,
+                        bytes=raw,
+                    )
+                )
             db.session.commit()
+            return jsonify({"ok": True})
         except Exception as exc:
             db.session.rollback()
             app.logger.error("Resume upload failed: %s\n%s", exc, traceback.format_exc())
-            return jsonify({"ok": False, "error": "Resume upload failed"}), 500
-        return jsonify({"ok": True})
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Resume upload failed",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
 
     @app.delete("/admin/api/resume")
     @login_required
     def admin_delete_resume():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+
         locale = normalize_locale(request.args.get("locale", ""))
         try:
             ResumeFile.query.filter_by(locale=locale).delete()
             db.session.commit()
+            return jsonify({"ok": True})
         except Exception as exc:
             db.session.rollback()
             app.logger.error("Resume delete failed: %s\n%s", exc, traceback.format_exc())
-            return jsonify({"ok": False, "error": "Delete failed"}), 500
-        return jsonify({"ok": True})
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Delete failed",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
 
     @app.put("/admin/api/links")
     @login_required
     def admin_save_links():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+
         data = request.get_json(force=True, silent=False)
         github = data.get("github", [])
         website = data.get("website", [])
@@ -351,43 +489,82 @@ def create_app() -> Flask:
             LinkItem.query.filter_by(kind="website").delete()
 
             for idx, it in enumerate(github_list):
-                db.session.add(LinkItem(kind="github", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
+                db.session.add(
+                    LinkItem(
+                        kind="github",
+                        label=it["label"],
+                        url=it["url"],
+                        sort_order=idx,
+                        pair_index=idx,
+                    )
+                )
             for idx, it in enumerate(website_list):
-                db.session.add(LinkItem(kind="website", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
+                db.session.add(
+                    LinkItem(
+                        kind="website",
+                        label=it["label"],
+                        url=it["url"],
+                        sort_order=idx,
+                        pair_index=idx,
+                    )
+                )
 
             db.session.commit()
+            return jsonify({"ok": True})
         except Exception as exc:
             db.session.rollback()
             app.logger.error("Links save failed: %s\n%s", exc, traceback.format_exc())
-            return jsonify({"ok": False, "error": "Save failed"}), 500
-        return jsonify({"ok": True})
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Save failed",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
 
     @app.put("/admin/api/accomplishments")
     @login_required
     def admin_save_accomplishments():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+
         data = request.get_json(force=True, silent=False)
         items = data.get("accomplishments", [])
         if not isinstance(items, list) or len(items) > 20:
             abort(400)
-        validated = []
+
+        validated: List[str] = []
         for it in items:
             if not isinstance(it, dict):
                 abort(400)
-            text = (it.get("text") or "").strip()
-            if not text or len(text) > 500:
+            text_val = (it.get("text") or "").strip()
+            if not text_val or len(text_val) > 500:
                 abort(400)
-            validated.append(text)
+            validated.append(text_val)
 
         try:
             Accomplishment.query.delete()
-            for idx, text in enumerate(validated):
-                db.session.add(Accomplishment(text=text, sort_order=idx))
+            for idx, text_val in enumerate(validated):
+                db.session.add(Accomplishment(text=text_val, sort_order=idx))
             db.session.commit()
+            return jsonify({"ok": True})
         except Exception as exc:
             db.session.rollback()
             app.logger.error("Accomplishments save failed: %s\n%s", exc, traceback.format_exc())
-            return jsonify({"ok": False, "error": "Save failed"}), 500
-        return jsonify({"ok": True})
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Save failed",
+                        "detail": f"{exc.__class__.__name__}: {str(exc)[:200]}",
+                    }
+                ),
+                500,
+            )
 
     return app
 
