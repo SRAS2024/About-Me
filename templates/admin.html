@@ -1,36 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="admin-grid">
-  <div class="card admin-panel">
-    <div class="section-title">Admin</div>
-    <p class="muted">Upload your photo and resumes, then manage up to five GitHub links and five website links.</p>
+<div class="container">
+<section class="admin-layout">
+  <!-- ── LEFT: Controls ───────────────────────────────────────── -->
+  <div class="admin-controls card">
+    <div class="section-label">Admin Controls</div>
+    <p class="muted">Manage your photo, resumes, portfolio links, and accomplishments.</p>
 
+    <!-- Photo -->
     <div class="admin-block">
-      <div class="admin-block-title">Profile photo</div>
-      <div class="admin-photo-wrap">
-        <div class="photo-frame admin-photo-frame">
-          {% if photo_exists %}
-            <button class="photo-delete" id="photoDeleteBtn" type="button" aria-label="Delete photo">×</button>
-            <img class="profile-photo" id="adminPhotoPreview" src="{{ url_for('asset_photo') }}" alt="Profile photo" />
-          {% else %}
-            <div class="photo-placeholder" id="adminPhotoPlaceholder">
-              <div class="muted">No photo uploaded</div>
-              <label class="btn-outline file-btn">
-                Add photo
-                <input id="photoInput" type="file" accept="image/*" capture="environment" hidden />
-              </label>
-            </div>
-          {% endif %}
-          <input id="photoInputHidden" type="file" accept="image/*" capture="environment" hidden />
-        </div>
+      <div class="admin-block-title">Profile Photo</div>
+      <div class="admin-photo-frame photo-frame">
+        {% if photo_exists %}
+          <button class="photo-delete" id="photoDeleteBtn" type="button" aria-label="Delete photo">&times;</button>
+          <img class="profile-photo" id="adminPhotoPreview" src="{{ url_for('asset_photo') }}" alt="Profile photo" />
+        {% else %}
+          <div class="photo-placeholder" id="adminPhotoPlaceholder">
+            <span class="muted">No photo</span>
+            <label class="btn-outline btn-sm file-btn">
+              Add photo
+              <input id="photoInput" type="file" accept="image/*" capture="environment" hidden />
+            </label>
+          </div>
+        {% endif %}
+        <input id="photoInputHidden" type="file" accept="image/*" capture="environment" hidden />
       </div>
     </div>
 
+    <!-- Resume -->
     <div class="admin-block">
-      <div class="admin-block-title">Resume upload</div>
+      <div class="admin-block-title">Resume Upload</div>
       <div class="row">
         <div class="col">
-          <label class="label">Resume language (locale)</label>
+          <label class="label">Locale</label>
           <select class="input" id="resumeLocale">
             {% for loc in supported_locales %}
               <option value="{{ loc }}">{{ loc }}</option>
@@ -39,68 +41,97 @@
         </div>
         <div class="col">
           <label class="label">PDF file</label>
-          <label class="btn-outline file-btn">
+          <label class="btn-outline btn-sm file-btn">
             Add file
             <input id="resumeInput" type="file" accept="application/pdf" hidden />
           </label>
         </div>
       </div>
-
-      <div class="muted small" id="resumeListHint"></div>
+      <div id="resumeListHint" class="muted small" style="margin-top:10px"></div>
     </div>
 
+    <!-- GitHub Links -->
     <div class="admin-block">
-      <div class="admin-block-title">GitHub links (max 5)</div>
+      <div class="admin-block-title">GitHub Links <span class="muted">(max 5)</span></div>
       <div id="githubEditor" class="link-editor"></div>
-      <button class="btn-outline" id="addGithubBtn" type="button">Add GitHub link</button>
+      <button class="btn-outline btn-sm" id="addGithubBtn" type="button">+ Add GitHub link</button>
     </div>
 
+    <!-- Website Links -->
     <div class="admin-block">
-      <div class="admin-block-title">Website links (max 5)</div>
+      <div class="admin-block-title">Website Links <span class="muted">(max 5)</span></div>
       <div id="websiteEditor" class="link-editor"></div>
-      <button class="btn-outline" id="addWebsiteBtn" type="button">Add website link</button>
+      <button class="btn-outline btn-sm" id="addWebsiteBtn" type="button">+ Add website link</button>
     </div>
 
+    <!-- Accomplishments -->
+    <div class="admin-block">
+      <div class="admin-block-title">Accomplishments <span class="muted">(max 20)</span></div>
+      <div id="accompEditor" class="link-editor"></div>
+      <button class="btn-outline btn-sm" id="addAccompBtn" type="button">+ Add accomplishment</button>
+    </div>
+
+    <!-- Save -->
     <div class="admin-actions">
-      <button class="btn" id="saveBtn" type="button">Save changes</button>
-      <div class="muted small" id="saveStatus"></div>
+      <button class="btn" id="saveBtn" type="button">Save All Changes</button>
+      <span class="muted small" id="saveStatus"></span>
     </div>
   </div>
 
-  <div class="card admin-preview">
-    <div class="section-title">Live preview</div>
-    <div class="preview-wrap">
-      <section class="hero card preview-hero">
-        <div class="hero-left">
-          <div class="kicker">About</div>
-          <h1>Professional. Reliable. Customer focused.</h1>
-          <p class="lead">
-            Full stack engineer with hands on production builds and a strong customer facing technical background.
-            I ship clean systems, document well, and troubleshoot across the stack.
-          </p>
-          <div class="cta-row">
-            <a class="btn" href="#" id="previewResumeBtn">Download Resume</a>
-            <a class="btn-outline" href="#previewLinks">Links</a>
-          </div>
-        </div>
+  <!-- ── RIGHT: Live Preview (mirrors public site) ────────────── -->
+  <div class="admin-preview">
+    <div class="section-label">Live Preview</div>
+    <div class="preview-frame">
 
-        <div class="hero-right">
-          <div class="photo-frame">
-            <div class="photo-placeholder" id="previewPhotoPlaceholder">
-              <div class="muted">No photo uploaded</div>
+      <!-- Name banner -->
+      <div class="name-banner preview-name-banner">
+        <h1 class="name-title">Samuel Ryan Andrew Simonds</h1>
+        <p class="name-subtitle">Full Stack Engineer</p>
+      </div>
+
+      <!-- About / Hero -->
+      <div class="preview-section">
+        <div class="hero-grid">
+          <div class="hero-content">
+            <div class="section-label">About</div>
+            <p class="hero-tagline">Professional. Reliable. Customer focused.</p>
+            <p class="hero-desc">Full stack engineer with hands-on production builds and a strong customer-facing technical background.</p>
+          </div>
+          <div class="hero-photo">
+            <div class="photo-frame">
+              <div class="photo-placeholder" id="previewPhotoPlaceholder">
+                <span class="muted">No photo</span>
+              </div>
+              <img class="profile-photo hidden" id="previewPhoto" alt="Preview photo" />
             </div>
-            <img class="profile-photo hidden" id="previewPhoto" alt="Preview photo" />
           </div>
         </div>
-      </section>
+      </div>
 
-      <section id="previewLinks">
-        <div class="section-title" style="margin-bottom:16px">Links</div>
-        <div class="paired-links" id="previewPairedLinks"></div>
-      </section>
+      <!-- Resume -->
+      <div class="preview-section preview-sage" id="previewResumeSection">
+        <div class="text-center">
+          <div class="section-label">Resume</div>
+          <a class="btn" href="/assets/resume" id="previewResumeBtn">Download Resume</a>
+        </div>
+      </div>
+
+      <!-- Portfolio -->
+      <div class="preview-section" id="previewPortfolioSection">
+        <div class="section-label text-center">Portfolio</div>
+        <div class="portfolio-grid" id="previewPortfolio"></div>
+      </div>
+
+      <!-- Accomplishments -->
+      <div class="preview-section preview-dark" id="previewAccompSection">
+        <div class="section-label text-center section-label-light">Accomplishments</div>
+        <div class="accomplishment-list" id="previewAccomplishments"></div>
+      </div>
+
     </div>
   </div>
 </section>
+</div>
 
 <script>
   window.__INITIAL__ = {
@@ -109,7 +140,8 @@
     photoExists: {{ 'true' if photo_exists else 'false' }},
     resumeLocale: {{ resume_locale|tojson }},
     hasResume: {{ 'true' if has_resume else 'false' }},
-    resumes: {{ resumes|tojson }}
+    resumes: {{ resumes|tojson }},
+    accomplishments: {{ accomplishments|tojson }}
   };
 </script>
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>

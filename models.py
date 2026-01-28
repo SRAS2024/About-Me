@@ -46,3 +46,12 @@ class LinkItem(db.Model):
     __table_args__ = (
         CheckConstraint("kind in ('github','website')", name="ck_link_kind"),
     )
+
+
+class Accomplishment(db.Model):
+    __tablename__ = "accomplishment"
+
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
