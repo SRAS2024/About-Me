@@ -1,24 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- ── Name Banner ──────────────────────────────────────────── -->
-<section class="name-banner">
-  <h1 class="name-title">Samuel Ryan Andrew Simonds</h1>
-  <p class="name-subtitle">Full Stack Engineer</p>
-</section>
-
 <!-- ── About / Hero ────────────────────────────────────────── -->
 <section class="section-wrap" id="about">
   <div class="container">
     <div class="hero-grid">
       <div class="hero-content">
         <div class="section-label" data-i18n="about">About</div>
+
         <p class="hero-tagline">Professional. Reliable. Customer focused.</p>
+
+        <!-- Traits (will be made editable from admin next) -->
+        <div class="traits" aria-label="Key traits">
+          <span class="trait-pill">Professional</span>
+          <span class="trait-pill">Reliable</span>
+          <span class="trait-pill">Customer focused</span>
+        </div>
+
         <p class="hero-desc">
           Full stack engineer with hands-on production builds and a strong customer-facing technical background.
           I ship clean systems, document well, and troubleshoot across the stack.
         </p>
       </div>
+
       <div class="hero-photo">
         <div class="photo-frame">
           {% if photo_exists %}
@@ -34,12 +38,27 @@
   </div>
 </section>
 
-<!-- ── Resume ──────────────────────────────────────────────── -->
+<!-- ── Resume (Inline viewer) ───────────────────────────────── -->
 {% if has_resume %}
 <section class="section-wrap section-sage" id="resume">
-  <div class="container text-center">
-    <div class="section-label" data-i18n="resume">Resume</div>
-    <a class="btn btn-lg" href="{{ url_for('asset_resume') }}" data-i18n="download">Download Resume</a>
+  <div class="container">
+    <div class="section-label text-center" data-i18n="resume">Resume</div>
+
+    <div class="resume-viewer" role="region" aria-label="Resume">
+      <iframe
+        class="resume-embed"
+        title="Resume"
+        src="{{ url_for('asset_resume', locale=resume_locale) }}#view=FitH"
+        loading="lazy"
+      ></iframe>
+
+      <noscript>
+        <div class="resume-fallback">
+          JavaScript is disabled. You can open the resume file directly:
+          <a href="{{ url_for('asset_resume', locale=resume_locale) }}">Resume</a>
+        </div>
+      </noscript>
+    </div>
   </div>
 </section>
 {% endif %}
@@ -61,6 +80,7 @@
           </a>
         {% endfor %}
       </div>
+
       <!-- Website column -->
       <div>
         <div class="portfolio-col-title" data-i18n="websites">Websites</div>
