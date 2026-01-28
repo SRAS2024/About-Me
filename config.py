@@ -16,6 +16,7 @@ class Config:
         _raw_db = _raw_db.replace("postgres://", "postgresql+psycopg://", 1)
     SQLALCHEMY_DATABASE_URI = _raw_db
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB upload limit
 
     ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "SSimonds")
     ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "MariaEduarda")

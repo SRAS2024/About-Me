@@ -124,6 +124,7 @@ def create_app() -> Flask:
             website_links = get_links("website")
             accomplishments = get_accomplishments()
         except Exception as exc:
+            db.session.rollback()
             app.logger.error("Database unavailable on /: %s", exc)
             return render_template(
                 "index.html",
@@ -181,6 +182,7 @@ def create_app() -> Flask:
             resumes = ResumeFile.query.order_by(ResumeFile.locale.asc()).all()
             resumes_list = [{"locale": r.locale, "filename": r.filename} for r in resumes]
         except Exception as exc:
+            db.session.rollback()
             app.logger.error("Database unavailable on /admin: %s", exc)
             photo_exists = False
             resume_locale = "en"
@@ -239,6 +241,7 @@ def create_app() -> Flask:
                 "accomplishments": get_accomplishments(),
             })
         except Exception as exc:
+            db.session.rollback()
             app.logger.error("Database unavailable on /admin/api/state: %s", exc)
             return jsonify({
                 "photo_exists": False,
@@ -257,17 +260,27 @@ def create_app() -> Flask:
         raw = f.read()
         if not raw:
             abort(400)
-        out_bytes, mimetype = compress_image(raw, tinify_api_key=app.config.get("TINIFY_API_KEY", ""))
-        SitePhoto.query.delete()
-        db.session.add(SitePhoto(filename=(f.filename or "profile.jpg"), mimetype=mimetype, bytes=out_bytes))
-        db.session.commit()
+        try:
+            out_bytes, mimetype = compress_image(raw, tinify_api_key=app.config.get("TINIFY_API_KEY", ""))
+            SitePhoto.query.delete()
+            db.session.add(SitePhoto(filename=(f.filename or "profile.jpg"), mimetype=mimetype, bytes=out_bytes))
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Photo upload failed: %s", exc)
+            return jsonify({"ok": False, "error": "Photo upload failed"}), 500
         return jsonify({"ok": True})
 
     @app.delete("/admin/api/photo")
     @login_required
     def admin_delete_photo():
-        SitePhoto.query.delete()
-        db.session.commit()
+        try:
+            SitePhoto.query.delete()
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Photo delete failed: %s", exc)
+            return jsonify({"ok": False, "error": "Delete failed"}), 500
         return jsonify({"ok": True})
 
     @app.post("/admin/api/resume")
@@ -281,22 +294,32 @@ def create_app() -> Flask:
             abort(400)
         locale = normalize_locale(request.form.get("locale", ""))
         mimetype = f.mimetype or "application/pdf"
-        existing = ResumeFile.query.filter_by(locale=locale).first()
-        if existing:
-            existing.filename = f.filename or f"resume_{locale}.pdf"
-            existing.mimetype = mimetype
-            existing.bytes = raw
-        else:
-            db.session.add(ResumeFile(locale=locale, filename=f.filename or f"resume_{locale}.pdf", mimetype=mimetype, bytes=raw))
-        db.session.commit()
+        try:
+            existing = ResumeFile.query.filter_by(locale=locale).first()
+            if existing:
+                existing.filename = f.filename or f"resume_{locale}.pdf"
+                existing.mimetype = mimetype
+                existing.bytes = raw
+            else:
+                db.session.add(ResumeFile(locale=locale, filename=f.filename or f"resume_{locale}.pdf", mimetype=mimetype, bytes=raw))
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Resume upload failed: %s", exc)
+            return jsonify({"ok": False, "error": "Resume upload failed"}), 500
         return jsonify({"ok": True})
 
     @app.delete("/admin/api/resume")
     @login_required
     def admin_delete_resume():
         locale = normalize_locale(request.args.get("locale", ""))
-        ResumeFile.query.filter_by(locale=locale).delete()
-        db.session.commit()
+        try:
+            ResumeFile.query.filter_by(locale=locale).delete()
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Resume delete failed: %s", exc)
+            return jsonify({"ok": False, "error": "Delete failed"}), 500
         return jsonify({"ok": True})
 
     @app.put("/admin/api/links")
@@ -325,15 +348,20 @@ def create_app() -> Flask:
         github_list = validate_list(github, "github")
         website_list = validate_list(website, "website")
 
-        LinkItem.query.filter_by(kind="github").delete()
-        LinkItem.query.filter_by(kind="website").delete()
+        try:
+            LinkItem.query.filter_by(kind="github").delete()
+            LinkItem.query.filter_by(kind="website").delete()
 
-        for idx, it in enumerate(github_list):
-            db.session.add(LinkItem(kind="github", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
-        for idx, it in enumerate(website_list):
-            db.session.add(LinkItem(kind="website", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
+            for idx, it in enumerate(github_list):
+                db.session.add(LinkItem(kind="github", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
+            for idx, it in enumerate(website_list):
+                db.session.add(LinkItem(kind="website", label=it["label"], url=it["url"], sort_order=idx, pair_index=idx))
 
-        db.session.commit()
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Links save failed: %s", exc)
+            return jsonify({"ok": False, "error": "Save failed"}), 500
         return jsonify({"ok": True})
 
     @app.put("/admin/api/accomplishments")
@@ -352,10 +380,15 @@ def create_app() -> Flask:
                 abort(400)
             validated.append(text)
 
-        Accomplishment.query.delete()
-        for idx, text in enumerate(validated):
-            db.session.add(Accomplishment(text=text, sort_order=idx))
-        db.session.commit()
+        try:
+            Accomplishment.query.delete()
+            for idx, text in enumerate(validated):
+                db.session.add(Accomplishment(text=text, sort_order=idx))
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Accomplishments save failed: %s", exc)
+            return jsonify({"ok": False, "error": "Save failed"}), 500
         return jsonify({"ok": True})
 
     return app

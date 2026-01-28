@@ -255,7 +255,6 @@
       var inp = document.createElement("input");
       inp.type = "file";
       inp.accept = "image/*";
-      inp.setAttribute("capture", "environment");
       inp.hidden = true;
       inp.addEventListener("change", function(e) { handlePhotoFile(e.target.files[0]); });
       lbl.appendChild(inp);
