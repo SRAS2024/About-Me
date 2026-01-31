@@ -13,6 +13,14 @@
   var resumes = S.resumes || [];
   var selectedResumeLocale = (S.resumeLocale || "en").toString();
 
+  /* ── Limits ──────────────────────────────────────────────────── */
+  var MAX_LINKS_PER_GROUP = 5;
+  var MAX_ACCOMPLISHMENTS = 20;
+
+  /* Traits:
+     Set this to whatever you want. Use a high number if you prefer "basically unlimited". */
+  var MAX_TRAITS = 12;
+
   /* ── DOM refs ─────────────────────────────────────────────────── */
   var $id = function (id) { return document.getElementById(id); };
 
@@ -137,7 +145,7 @@
   }
 
   function addLink(list, container, kind) {
-    if (list.length >= 5) return;
+    if (list.length >= MAX_LINKS_PER_GROUP) return;
     list.push({ label: "", url: "", kind: kind, sort_order: list.length });
     renderLinkEditor(container, list);
     renderPreview();
@@ -181,11 +189,21 @@
       row.append(idx, textIn, rm);
       traitsEditor.appendChild(row);
     });
+
+    if (addTraitBtn) {
+      if (traits.length >= MAX_TRAITS) {
+        addTraitBtn.disabled = true;
+        addTraitBtn.title = "Trait limit reached (" + MAX_TRAITS + ").";
+      } else {
+        addTraitBtn.disabled = false;
+        addTraitBtn.title = "";
+      }
+    }
   }
 
   if (addTraitBtn) {
     addTraitBtn.addEventListener("click", function () {
-      if (traits.length >= 6) return;
+      if (traits.length >= MAX_TRAITS) return;
       traits.push({ text: "", sort_order: traits.length });
       renderTraitsEditor();
       renderPreview();
@@ -226,7 +244,7 @@
 
   if (addAccompBtn) {
     addAccompBtn.addEventListener("click", function () {
-      if (accomplishments.length >= 20) return;
+      if (accomplishments.length >= MAX_ACCOMPLISHMENTS) return;
       accomplishments.push({ text: "", sort_order: accomplishments.length });
       renderAccompEditor();
       renderPreview();
