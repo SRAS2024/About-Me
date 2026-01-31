@@ -10,11 +10,16 @@
 
         <p class="hero-tagline">Professional. Reliable. Customer focused.</p>
 
-        <!-- Traits (will be made editable from admin next) -->
         <div class="traits" aria-label="Key traits">
-          <span class="trait-pill">Professional</span>
-          <span class="trait-pill">Reliable</span>
-          <span class="trait-pill">Customer focused</span>
+          {% if traits is defined and traits|length > 0 %}
+            {% for t in traits %}
+              <span class="trait-pill">{{ t }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="trait-pill">Professional</span>
+            <span class="trait-pill">Reliable</span>
+            <span class="trait-pill">Customer focused</span>
+          {% endif %}
         </div>
 
         <p class="hero-desc">
@@ -48,9 +53,15 @@
       <iframe
         class="resume-embed"
         title="Resume"
-        src="{{ url_for('asset_resume', locale=resume_locale) }}#view=FitH"
+        src="{{ url_for('asset_resume', locale=resume_locale) }}#view=FitW&navpanes=0"
         loading="lazy"
       ></iframe>
+
+      <div class="text-center" style="margin-top:12px">
+        <a class="btn-outline btn-sm" href="{{ url_for('asset_resume', locale=resume_locale) }}" target="_blank" rel="noreferrer" data-i18n="download">
+          Download Resume
+        </a>
+      </div>
 
       <noscript>
         <div class="resume-fallback">
@@ -70,7 +81,6 @@
     <div class="section-label text-center" data-i18n="portfolio">Portfolio</div>
 
     <div class="portfolio-grid">
-      <!-- GitHub column -->
       <div>
         <div class="portfolio-col-title" data-i18n="github">GitHub</div>
         {% for l in github_links %}
@@ -81,7 +91,6 @@
         {% endfor %}
       </div>
 
-      <!-- Website column -->
       <div>
         <div class="portfolio-col-title" data-i18n="websites">Websites</div>
         {% for l in website_links %}
