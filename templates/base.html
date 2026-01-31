@@ -16,17 +16,13 @@
           <a href="{{ url_for('index') }}" class="brand-link">Samuel Ryan Andrew Simonds</a>
         </div>
 
-        <nav class="nav nav-right">
-          <a href="{{ url_for('index') }}">Home</a>
-
-          {% if request.path.startswith('/admin') %}
-            {% if session.get('admin_authed') %}
-              <form method="post" action="{{ url_for('admin_logout') }}" class="inline">
-                <button type="submit" class="linklike">Log out</button>
-              </form>
-            {% endif %}
-          {% endif %}
-        </nav>
+        {% if request.path.startswith('/admin') and session.get('admin_authed') %}
+          <nav class="nav nav-right">
+            <form method="post" action="{{ url_for('admin_logout') }}" class="inline">
+              <button type="submit" class="linklike">Log out</button>
+            </form>
+          </nav>
+        {% endif %}
       </div>
     </header>
 
@@ -50,7 +46,7 @@
           fr:{about:"\u00c0 propos",resume:"CV",portfolio:"Portfolio",accomplishments:"R\u00e9alisations",download:"T\u00e9l\u00e9charger le CV",github:"GitHub",websites:"Sites web",noLinks:"Aucun lien encore.",noAccomp:"Aucune r\u00e9alisation encore.",noPhoto:"Aucune photo"},
           de:{about:"\u00dcber mich",resume:"Lebenslauf",portfolio:"Portfolio",accomplishments:"Erfolge",download:"Lebenslauf herunterladen",github:"GitHub",websites:"Webseiten",noLinks:"Noch keine Links.",noAccomp:"Noch keine Erfolge.",noPhoto:"Kein Foto hochgeladen"},
           it:{about:"Chi sono",resume:"Curriculum",portfolio:"Portfolio",accomplishments:"Risultati",download:"Scarica il Curriculum",github:"GitHub",websites:"Siti web",noLinks:"Nessun link ancora.",noAccomp:"Nessun risultato ancora.",noPhoto:"Nessuna foto caricata"},
-          ja:{about:"\u7D4C\u6B74",resume:"\u5C65\u6B74\u66F8",portfolio:"\u30DD\u30FC\u30C8\u30D5\u30A9\u30EA\u30AA",accomplishments:"\u5B9F\u7E3E",download:"\u5C65\u6B74\u66F8\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9",github:"GitHub",websites:"\u30A6\u30A7\u30D6\u30B5\u30A4\u30C8",noLinks:"\u30EA\u30F3\u30AF\u306A\u3057",noAccomp:"\u5B9F\u7E3E\u306A\u3057",noPhoto:"\u5199\u771F\u306A\u3057"},
+          ja:{about:"\u7D4C\u6B74",resume:"\u5C65\u6B74\u66F8",portfolio:"\u30DD\u30FC\u30C8\ud\ud\ud",accomplishments:"\u5B9F\u7E3E",download:"\u5C65\u6B74\u66F8\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9",github:"GitHub",websites:"\u30A6\u30A7\u30D6\u30B5\u30A4\u30C8",noLinks:"\u30EA\u30F3\u30AF\u306A\u3057",noAccomp:"\u5B9F\u7E3E\u306A\u3057",noPhoto:"\u5199\u771F\u306A\u3057"},
           ko:{about:"\uc18c\uac1c",resume:"\uc774\ub825\uc11c",portfolio:"\ud3ec\ud2b8\ud3f4\ub9ac\uc624",accomplishments:"\uc131\uacfc",download:"\uc774\ub825\uc11c \ub2e4\uc6b4\ub85c\ub4dc",github:"GitHub",websites:"\uc6f9\uc0ac\uc774\ud2b8",noLinks:"\ub9c1\ud06c \uc5c6\uc74c",noAccomp:"\uc131\uacfc \uc5c6\uc74c",noPhoto:"\uc0ac\uc9c4 \uc5c6\uc74c"},
           zh:{about:"\u5173\u4e8e",resume:"\u7b80\u5386",portfolio:"\u4f5c\u54c1\u96c6",accomplishments:"\u6210\u5c31",download:"\u4e0b\u8f7d\u7b80\u5386",github:"GitHub",websites:"\u7f51\u7ad9",noLinks:"\u6682\u65e0\u94fe\u63a5",noAccomp:"\u6682\u65e0\u6210\u5c31",noPhoto:"\u65e0\u7167\u7247"}
         };
