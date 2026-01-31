@@ -43,6 +43,9 @@ def create_app() -> Flask:
     app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
     app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
 
+    # Single source of truth for limits used by the backend
+    MAX_TRAITS = 12
+
     def is_logged_in() -> bool:
         return session.get("admin_authed") is True
 
@@ -338,8 +341,8 @@ def create_app() -> Flask:
         data = request.get_json(force=True, silent=False) or {}
         items = data.get("traits", [])
 
-        if not isinstance(items, list) or len(items) > 6:
-            return jsonify({"ok": False, "error": "Invalid traits list"}), 400
+        if not isinstance(items, list) or len(items) > MAX_TRAITS:
+            return jsonify({"ok": False, "error": f"Invalid traits list (max {MAX_TRAITS})"}), 400
 
         cleaned: List[str] = []
         for t in items:
