@@ -211,6 +211,8 @@ button,input,select,textarea{font:inherit}
   background:#fff;
   box-shadow:var(--shadow-sm);
 }
+
+/* Desktop: keep a tall viewer that feels like a page preview */
 .resume-embed{
   width:100%;
   height:min(82vh, 980px);
@@ -218,6 +220,22 @@ button,input,select,textarea{font:inherit}
   display:block;
   background:#fff;
 }
+
+/* Mobile: make the iframe proportional to the device width
+   so the PDF renders at a sane scale instead of looking cropped/zoomed. */
+@media(max-width:640px){
+  .resume-viewer{
+    max-width:100%;
+    border-radius:12px;
+  }
+  .resume-embed{
+    height:auto;
+    aspect-ratio:8.5/11;
+    min-height:460px;
+    max-height:78vh;
+  }
+}
+
 .resume-fallback{
   padding:18px 20px;
   font-size:.9rem;
@@ -457,5 +475,6 @@ button,input,select,textarea{font:inherit}
   .card{padding:20px}
   .photo-frame{width:150px;height:150px}
   .section-wrap{padding:40px 0}
-  .resume-embed{height:520px}
+
+  /* No longer force a fixed resume height here, the 640px rule handles it */
 }
