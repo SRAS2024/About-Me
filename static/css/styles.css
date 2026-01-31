@@ -53,20 +53,39 @@ button,input,select,textarea{font:inherit}
   background:var(--black);
   border-bottom:1px solid rgba(255,255,255,.06);
 }
-.topbar-inner{display:flex;align-items:center;justify-content:space-between;height:56px}
 
-/* Centered brand with nav on the right (no left nav) */
-.topbar-center{position:relative}
-.brand-center{position:absolute;left:50%;transform:translateX(-50%)}
-.nav-right{margin-left:auto}
+/* Three column grid keeps the name centered on every device */
+.topbar-inner{
+  display:grid;
+  grid-template-columns:1fr minmax(0, 720px) 1fr;
+  align-items:center;
+  min-height:56px;
+  padding:10px 0;
+  gap:10px;
+}
+
+.topbar-left{justify-self:start}
+.topbar-right{justify-self:end}
+
+.brand{
+  justify-self:center;
+  text-align:center;
+  padding:0 10px;
+}
 
 .brand-link{
-  font-size:.95rem;font-weight:600;color:var(--sage-light);
+  display:inline-block;
+  font-weight:600;
+  color:var(--sage-light);
   letter-spacing:.02em;
   transition:var(--transition);
-  white-space:nowrap;
+  text-align:center;
+  white-space:normal;
+  line-height:1.2;
+  font-size:clamp(.78rem, 2.6vw, .95rem);
 }
 .brand-link:hover{color:#fff}
+
 .nav{display:flex;align-items:center;gap:20px}
 .nav a,.nav .linklike{
   color:var(--gray-400);font-size:.82rem;font-weight:500;
@@ -212,7 +231,7 @@ button,input,select,textarea{font:inherit}
   box-shadow:var(--shadow-sm);
 }
 
-/* Desktop: keep a tall viewer that feels like a page preview */
+/* Default (desktop and most tablets) */
 .resume-embed{
   width:100%;
   height:min(82vh, 980px);
@@ -221,18 +240,16 @@ button,input,select,textarea{font:inherit}
   background:#fff;
 }
 
-/* Mobile: make the iframe proportional to the device width
-   so the PDF renders at a sane scale instead of looking cropped/zoomed. */
+/* Mobile: prioritize a clean full width fit */
 @media(max-width:640px){
   .resume-viewer{
     max-width:100%;
     border-radius:12px;
   }
   .resume-embed{
-    height:auto;
-    aspect-ratio:8.5/11;
-    min-height:460px;
-    max-height:78vh;
+    height:78vh;
+    min-height:520px;
+    max-height:920px;
   }
 }
 
@@ -455,10 +472,6 @@ button,input,select,textarea{font:inherit}
 
 /* ── Responsive ───────────────────────────────────────────────── */
 @media(max-width:900px){
-  .topbar-center{justify-content:flex-end}
-  .brand-center{position:static;transform:none;margin-right:auto}
-  .nav-right{margin-left:0}
-
   .hero-grid{grid-template-columns:1fr;text-align:center}
   .hero-photo{display:flex;justify-content:center}
   .traits{justify-content:center}
@@ -475,6 +488,4 @@ button,input,select,textarea{font:inherit}
   .card{padding:20px}
   .photo-frame{width:150px;height:150px}
   .section-wrap{padding:40px 0}
-
-  /* No longer force a fixed resume height here, the 640px rule handles it */
 }
