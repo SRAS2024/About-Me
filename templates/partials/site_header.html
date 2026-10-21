@@ -1,0 +1,33 @@
+<!-- FEATURE: Site-wide navigation. This header is shared by every public page, so the
+     menu is identical everywhere. The link for the page being viewed gets aria-current="page"
+     and the sage underline. On phones a "Menu" button (static/js/site.js) opens and closes it. -->
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="topbar">
+  <div class="container topbar-inner">
+    <div class="topbar-left"></div>
+
+    <div class="brand">
+      <a href="{{ url_for('index') }}" class="brand-link">Samuel Ryan Andrew Simonds</a>
+    </div>
+
+    <div class="topbar-right"></div>
+  </div>
+
+  <div class="site-nav-bar">
+    <div class="container">
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span class="nav-toggle-icon" aria-hidden="true"></span>
+        <span data-i18n="menu">Menu</span>
+      </button>
+      <nav class="site-nav" id="site-nav" aria-label="Main">
+        <ul class="site-nav-list">
+          {% for page in nav_pages %}
+            <li>
+              <a href="{{ url_for(page.endpoint) }}" data-i18n="{{ page.i18n }}"{% if active_page == page.endpoint %} aria-current="page"{% endif %}>{{ page.label }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>

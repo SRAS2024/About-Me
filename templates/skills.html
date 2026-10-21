@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Samuel Simonds - Web Design and Technologies</title>
+    <meta name="description" content="Education, certification and a searchable list of technical and professional skills for Samuel Simonds." />
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body>
+    {% include "partials/site_header.html" %}
+
+    <main id="main">
+      <header class="name-banner">
+        <h1 class="name-title">Education &amp; Skills</h1>
+        <p class="name-subtitle">Degree, certification and skills</p>
+      </header>
+
+      <section class="section-wrap">
+        <div class="container">
+          <h2 class="section-label text-center">Education</h2>
+          <div class="card-grid">
+            <article class="card role-card">
+              <h3>Bachelor of Business Administration (<abbr title="Bachelor of Business Administration">BBA</abbr>)</h3>
+              <p class="role-meta">University of Massachusetts Global &middot; <time datetime="2020-08">Aug 2020</time> &ndash; <time datetime="2025-12">Dec 2025</time></p>
+              <p>
+                <strong>Management and Organizational Leadership.</strong> The business side of my education helps me
+                understand what a client actually needs from a project, not just what they ask for.
+              </p>
+            </article>
+
+            <article class="card role-card">
+              <h3>Full Stack Engineering Certification</h3>
+              <p class="role-meta">IBM &middot; <time datetime="2025-10">Oct 2025</time></p>
+              <p>
+                Professional certification in full stack web development, from front end interfaces to
+                back end services and deployment. It turned years of tinkering into a <em>structured</em> skill set.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-wrap section-sage">
+        <div class="container">
+          <h2 class="section-label text-center">Skills</h2>
+          <p class="section-intro text-center">
+            Pick a category or type a word to filter the list. Each row says where I've actually used the skill.
+          </p>
+
+          <!-- FEATURE: JavaScript skills filter. The category buttons and the search box filter the table
+               rows in the browser (static/js/site.js) and a live counter announces how many match. -->
+          <div class="filter-bar" role="group" aria-label="Filter skills by category">
+            <button class="chip" type="button" data-filter="all" aria-pressed="true">All</button>
+            <button class="chip" type="button" data-filter="languages" aria-pressed="false">Languages</button>
+            <button class="chip" type="button" data-filter="frameworks" aria-pressed="false">Frameworks</button>
+            <button class="chip" type="button" data-filter="data" aria-pressed="false">Data</button>
+            <button class="chip" type="button" data-filter="backend" aria-pressed="false">Back end</button>
+            <button class="chip" type="button" data-filter="tools" aria-pressed="false">Tools</button>
+            <button class="chip" type="button" data-filter="professional" aria-pressed="false">Professional</button>
+          </div>
+          <div class="filter-search-row">
+            <label class="label" for="skill-search">Search skills</label>
+            <input class="input filter-search" id="skill-search" type="search" placeholder="Try &ldquo;SQL&rdquo; or &ldquo;Flask&rdquo;" autocomplete="off" />
+          </div>
+          <p class="filter-count" id="skill-count" aria-live="polite">Showing all skills</p>
+
+          <div class="table-wrap" role="region" aria-labelledby="skills-caption" tabindex="0">
+            <table class="data-table" id="skills-table">
+              <caption id="skills-caption">Technical and professional skills</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Skill</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Where I've used it</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-category="languages"><th scope="row">JavaScript</th><td><span class="skill-tag">Languages</span></td><td>DARAH storefront and the interactive parts of this site</td></tr>
+                <tr data-category="languages"><th scope="row">Python</th><td><span class="skill-tag">Languages</span></td><td>In Tuned and this website's back end</td></tr>
+                <tr data-category="languages"><th scope="row">Java</th><td><span class="skill-tag">Languages</span></td><td>Object-oriented programming and problem solving</td></tr>
+                <tr data-category="languages"><th scope="row">HTML5</th><td><span class="skill-tag">Languages</span></td><td>Semantic, accessible page structure for every site I build</td></tr>
+                <tr data-category="languages"><th scope="row">CSS3</th><td><span class="skill-tag">Languages</span></td><td>Responsive layouts and consistent visual design</td></tr>
+                <tr data-category="frameworks"><th scope="row">React</th><td><span class="skill-tag">Frameworks</span></td><td>Component-based user interfaces</td></tr>
+                <tr data-category="frameworks"><th scope="row">Node.js</th><td><span class="skill-tag">Frameworks</span></td><td>DARAH storefront server</td></tr>
+                <tr data-category="frameworks"><th scope="row">Express</th><td><span class="skill-tag">Frameworks</span></td><td>DARAH API and server-side cart sessions</td></tr>
+                <tr data-category="frameworks"><th scope="row">Flask</th><td><span class="skill-tag">Frameworks</span></td><td>In Tuned and this website</td></tr>
+                <tr data-category="data"><th scope="row">PostgreSQL</th><td><span class="skill-tag">Data</span></td><td>Products, content, accounts and messages for DARAH, In Tuned and this website</td></tr>
+                <tr data-category="data"><th scope="row">SQL</th><td><span class="skill-tag">Data</span></td><td>Queries, joins and reporting</td></tr>
+                <tr data-category="data"><th scope="row">Schema design and relational modeling</th><td><span class="skill-tag">Data</span></td><td>Structured data models for client applications</td></tr>
+                <tr data-category="backend"><th scope="row">REST API development</th><td><span class="skill-tag">Back end</span></td><td>JSON APIs for storefronts, admin panels and this site's contact form</td></tr>
+                <tr data-category="backend"><th scope="row">Authentication and authorization</th><td><span class="skill-tag">Back end</span></td><td>Secure logins and admin-only areas</td></tr>
+                <tr data-category="backend"><th scope="row">Validation, error handling and logging</th><td><span class="skill-tag">Back end</span></td><td>Checking input in the browser and again on the server</td></tr>
+                <tr data-category="tools"><th scope="row">Git and GitHub</th><td><span class="skill-tag">Tools</span></td><td>Version control for every project</td></tr>
+                <tr data-category="tools"><th scope="row">Command line workflows</th><td><span class="skill-tag">Tools</span></td><td>Deployments, databases and debugging</td></tr>
+                <tr data-category="tools"><th scope="row">Docker and Railway</th><td><span class="skill-tag">Tools</span></td><td>Containerized hosting for this website and its database</td></tr>
+                <tr data-category="professional"><th scope="row">Troubleshooting</th><td><span class="skill-tag">Professional</span></td><td>Diagnosing hardware and software issues at Apple</td></tr>
+                <tr data-category="professional"><th scope="row">Technical documentation</th><td><span class="skill-tag">Professional</span></td><td>Detailed repair notes and project READMEs</td></tr>
+                <tr data-category="professional"><th scope="row">Clear communication</th><td><span class="skill-tag">Professional</span></td><td>Setting expectations with customers and clients</td></tr>
+                <tr data-category="professional"><th scope="row">Training and mentoring</th><td><span class="skill-tag">Professional</span></td><td>Coaching technicians and sales partners</td></tr>
+                <tr data-category="professional"><th scope="row">Accessibility</th><td><span class="skill-tag">Professional</span></td><td>Accessibility-focused repair workflows and readable interfaces</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="status-msg text-center" id="skills-empty" hidden>No skills match that search. Try another word or pick &ldquo;All&rdquo;.</p>
+        </div>
+      </section>
+    </main>
+
+    {% include "partials/site_footer.html" %}
+  </body>
+</html>

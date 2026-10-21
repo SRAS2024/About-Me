@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 import re
+import time
 import traceback
+from datetime import datetime
 from functools import wraps
 from io import BytesIO
 from typing import Any, Dict, List
@@ -26,10 +29,89 @@ from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from config import Config
 from i18n import babel, select_locale
-from models import db, Accomplishment, LinkItem, ResumeFile, SitePhoto, Trait
+from models import db, Accomplishment, ContactMessage, LinkItem, ResumeFile, SitePhoto, Trait
 from services.image_processing import compress_image
 
 logger = logging.getLogger(__name__)
+
+# Public pages shown in the site navigation, in menu order.
+# "i18n" is the key the label translator in static/js/i18n.js uses.
+NAV_PAGES = [
+    {"endpoint": "index", "label": "Home", "i18n": "home"},
+    {"endpoint": "about", "label": "About", "i18n": "about"},
+    {"endpoint": "experience", "label": "Experience", "i18n": "experience"},
+    {"endpoint": "skills", "label": "Education & Skills", "i18n": "skills"},
+    {"endpoint": "projects", "label": "Projects", "i18n": "projects"},
+    {"endpoint": "contact", "label": "Contact", "i18n": "contact"},
+]
+
+# Contact form choices (value -> label). Validated on the server as well as in the browser.
+CONTACT_REASONS = {
+    "job": "Job opportunity",
+    "freelance": "Freelance project",
+    "networking": "Networking",
+    "other": "Something else",
+}
+# Local part may not contain characters that change a mailto: link (?, &, =, %, #, /);
+# the domain must be a real hostname with a letter-only top-level domain.
+EMAIL_RE = re.compile(
+    r"^[^\s@?#&=%/]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
+    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$"
+)
+# Control characters (except tab and newlines) are dropped; PostgreSQL rejects NUL in text.
+CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+CONTACT_LIMITS = {"name": 80, "email": 254, "company": 100, "message": 2000}
+MESSAGE_MIN_CHARS = 20
+
+
+def validate_contact(data: Dict[str, Any]) -> tuple[Dict[str, str], Dict[str, str]]:
+    """
+    Returns (clean_values, errors). errors maps a field name to a message the
+    form can show next to that field. Mirrors the checks in static/js/site.js.
+    """
+
+    def field(key: str) -> str:
+        val = data.get(key)
+        return CONTROL_CHARS_RE.sub("", val).strip() if isinstance(val, str) else ""
+
+    clean = {key: field(key) for key in ("name", "email", "company", "reason", "message")}
+    errors: Dict[str, str] = {}
+
+    name = clean["name"]
+    if not name:
+        errors["name"] = "Please enter your name."
+    elif len(name) < 2:
+        errors["name"] = "Your name should be at least 2 characters."
+    elif len(name) > CONTACT_LIMITS["name"]:
+        errors["name"] = "Please keep your name under 80 characters."
+    elif any(ch.isdigit() for ch in name):
+        errors["name"] = "Names can't include numbers."
+
+    email = clean["email"]
+    if not email:
+        errors["email"] = "Please enter your email address."
+    elif len(email) > CONTACT_LIMITS["email"] or not EMAIL_RE.match(email):
+        errors["email"] = "Please enter a valid email address, like name@example.com."
+
+    if len(clean["company"]) > CONTACT_LIMITS["company"]:
+        errors["company"] = "Please keep the company name under 100 characters."
+
+    if clean["reason"] not in CONTACT_REASONS:
+        errors["reason"] = "Please choose a reason for reaching out."
+
+    message = clean["message"]
+    if not message:
+        errors["message"] = "Please write a short message."
+    elif len(message) < MESSAGE_MIN_CHARS:
+        errors["message"] = "Please write at least 20 characters so I know how to help."
+    elif len(message) > CONTACT_LIMITS["message"]:
+        errors["message"] = "Please keep your message under 2,000 characters."
+
+    consent = data.get("consent")
+    if consent not in (True, "on", "true", "1", "yes"):
+        errors["consent"] = "Please confirm it's okay to store your message so I can reply."
+
+    return clean, errors
 
 
 def create_app() -> Flask:
@@ -39,9 +121,12 @@ def create_app() -> Flask:
     db.init_app(app)
     babel.init_app(app, locale_selector=lambda: select_locale(app))
 
-    # Reasonable defaults for session cookies behind a proxy (Railway)
-    app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
-    app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
+    # Session cookie hardening. Flask already defines these keys, so setdefault() would not
+    # change them; assign directly. Railway serves HTTPS only (HTTP redirects), so mark the
+    # cookie Secure there and leave it off for local http://localhost development.
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SECURE"] = bool(os.environ.get("RAILWAY_ENVIRONMENT"))
 
     # Single source of truth for limits used by the backend
     MAX_TRAITS = 12
@@ -49,10 +134,25 @@ def create_app() -> Flask:
     def is_logged_in() -> bool:
         return session.get("admin_authed") is True
 
+    def safe_next(target: str) -> str:
+        # Only follow same-site paths after login ("//evil.com" and "https://..." are rejected).
+        target = (target or "").strip()
+        if (
+            target.startswith("/")
+            and not target.startswith("//")
+            and "\\" not in target
+            and not any(ord(ch) < 32 for ch in target)
+        ):
+            return target
+        return url_for("admin")
+
     def login_required(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             if not is_logged_in():
+                # API calls get JSON so the admin page can report it, instead of a login page.
+                if request.path.startswith("/admin/api/"):
+                    return jsonify({"ok": False, "error": "Not logged in. Please sign in again."}), 401
                 return redirect(url_for("admin_login", next=request.path))
             return fn(*args, **kwargs)
 
@@ -67,9 +167,10 @@ def create_app() -> Flask:
         return loc.replace("-", "_")
 
     def best_resume_locale() -> str:
-        available = [r.locale for r in ResumeFile.query.all()]
+        default = app.config.get("BABEL_DEFAULT_LOCALE", "en")
+        available = [r.locale for r in ResumeFile.query.order_by(ResumeFile.locale.asc()).all()]
         if not available:
-            return app.config.get("BABEL_DEFAULT_LOCALE", "en")
+            return default
         best = request.accept_languages.best_match(available)
         if best:
             return best
@@ -79,7 +180,7 @@ def create_app() -> Flask:
             for a in available:
                 if a.split("_")[0] == base:
                     return a
-        return available[0]
+        return default if default in available else available[0]
 
     def get_links(kind: str) -> List[Dict[str, Any]]:
         items = (
@@ -172,7 +273,58 @@ def create_app() -> Flask:
         ok, msg = db_ping()
         return jsonify({"status": "ok", "db_ok": ok, "db": msg}), 200
 
+    # Browsers ask for /favicon.ico on their own; point them at the SVG icon.
+    @app.get("/favicon.ico")
+    def favicon():
+        return redirect(url_for("static", filename="images/favicon.svg"), code=301)
+
     # ── Public Routes ─────────────────────────────────────────────
+
+    @app.context_processor
+    def inject_site_globals() -> Dict[str, Any]:
+        active = request.endpoint
+        if active == "index_html":
+            active = "index"
+        elif active == "contact_post":
+            active = "contact"
+        return {"nav_pages": NAV_PAGES, "active_page": active, "current_year": datetime.now().year}
+
+    # ── Contact form throttle (per visitor, in memory) ────────────
+    contact_hits: Dict[str, List[float]] = {}
+    CONTACT_WINDOW_SECONDS = 600
+    CONTACT_MAX_PER_WINDOW = 5
+
+    def client_ip() -> str:
+        # Railway's edge proxy appends the real visitor address as the LAST X-Forwarded-For
+        # entry; anything before it was sent by the client and could be faked.
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        last = forwarded.split(",")[-1].strip() if forwarded else ""
+        return last or (request.remote_addr or "unknown")
+
+    def contact_rate_limited() -> bool:
+        now = time.time()
+        if len(contact_hits) > 1000:
+            for key in [k for k, v in contact_hits.items() if not v or now - v[-1] > CONTACT_WINDOW_SECONDS]:
+                contact_hits.pop(key, None)
+        ip = client_ip()
+        recent = [t for t in contact_hits.get(ip, []) if now - t < CONTACT_WINDOW_SECONDS]
+        limited = len(recent) >= CONTACT_MAX_PER_WINDOW
+        if not limited:
+            recent.append(now)
+        contact_hits[ip] = recent
+        return limited
+
+    def save_contact_message(clean: Dict[str, str]) -> None:
+        db.session.add(
+            ContactMessage(
+                name=clean["name"],
+                email=clean["email"],
+                company=clean["company"],
+                reason=clean["reason"],
+                message=clean["message"],
+            )
+        )
+        db.session.commit()
 
     @app.get("/")
     def index():
@@ -210,6 +362,113 @@ def create_app() -> Flask:
             website_links=website_links,
             accomplishments=accomplishments,
             traits=traits,
+        )
+
+    # The homepage is also reachable by its file name.
+    @app.get("/index.html")
+    def index_html():
+        return index()
+
+    @app.get("/about.html")
+    def about():
+        return render_template("about.html")
+
+    @app.get("/experience.html")
+    def experience():
+        # Only offer the resume download when a resume has actually been uploaded.
+        try:
+            resume_locale = best_resume_locale()
+            has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Database unavailable on /experience.html: %s", exc)
+            resume_locale, has_resume = "en", False
+        return render_template("experience.html", has_resume=has_resume, resume_locale=resume_locale)
+
+    @app.get("/skills.html")
+    def skills():
+        return render_template("skills.html")
+
+    @app.get("/projects.html")
+    def projects():
+        return render_template("projects.html")
+
+    @app.get("/contact.html")
+    def contact():
+        return render_template("contact.html", form={}, errors={}, sent=False, reasons=CONTACT_REASONS)
+
+    # Fallback for browsers without JavaScript: a normal form POST that re-renders the page.
+    @app.post("/contact.html")
+    def contact_post():
+        data = request.form.to_dict()
+        if (data.get("website") or "").strip():
+            # Honeypot field was filled in, so this is a bot. Act as if it worked.
+            return render_template("contact.html", form={}, errors={}, sent=True, reasons=CONTACT_REASONS)
+        clean, errors = validate_contact(data)
+        if not errors and contact_rate_limited():
+            errors["form"] = "You've sent several messages in a short time. Please try again in a few minutes."
+        if not errors:
+            try:
+                save_contact_message(clean)
+            except Exception as exc:
+                db.session.rollback()
+                app.logger.error("Contact save failed: %s\n%s", exc, traceback.format_exc())
+                errors["form"] = "Your message couldn't be saved right now. Please email me directly instead."
+        if errors:
+            # Keep the consent box ticked on the re-rendered form if it was ticked.
+            form = dict(clean, consent=data.get("consent") in ("on", "true", "1", "yes"))
+            return (
+                render_template(
+                    "contact.html", form=form, errors=errors, sent=False, reasons=CONTACT_REASONS
+                ),
+                400,
+            )
+        return render_template("contact.html", form={}, errors={}, sent=True, reasons=CONTACT_REASONS)
+
+    # JSON endpoint used by the contact form script (static/js/site.js).
+    @app.post("/api/contact")
+    def api_contact():
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid request."}), 400
+        honeypot = data.get("website")
+        if isinstance(honeypot, str) and honeypot.strip():
+            return jsonify({"ok": True}), 201
+        clean, errors = validate_contact(data)
+        if errors:
+            return jsonify({"ok": False, "error": "Please fix the highlighted fields.", "errors": errors}), 400
+        if contact_rate_limited():
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "You've sent several messages in a short time. Please try again in a few minutes.",
+                    }
+                ),
+                429,
+            )
+        try:
+            save_contact_message(clean)
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Contact save failed: %s\n%s", exc, traceback.format_exc())
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "Your message couldn't be saved right now. Please email me directly instead.",
+                    }
+                ),
+                503,
+            )
+        return jsonify({"ok": True}), 201
+
+    # Short addresses without ".html" send visitors to the real page.
+    for slug in ("about", "experience", "skills", "projects", "contact"):
+        app.add_url_rule(
+            f"/{slug}",
+            f"{slug}_short",
+            lambda slug=slug: redirect(url_for(slug), code=301),
         )
 
     @app.get("/assets/photo")
@@ -282,9 +541,17 @@ def create_app() -> Flask:
     def admin_login_post():
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
-        if username == app.config["ADMIN_USERNAME"] and password == app.config["ADMIN_PASSWORD"]:
+        expected_user = app.config.get("ADMIN_USERNAME") or ""
+        expected_pass = app.config.get("ADMIN_PASSWORD") or ""
+        # Login is disabled until both values are set in the environment.
+        if (
+            expected_user
+            and expected_pass
+            and hmac.compare_digest(username.encode(), expected_user.encode())
+            and hmac.compare_digest(password.encode(), expected_pass.encode())
+        ):
             session["admin_authed"] = True
-            return redirect(request.form.get("next") or url_for("admin"))
+            return redirect(safe_next(request.form.get("next", "")))
         return render_template(
             "admin_login.html",
             next=request.form.get("next", "/admin"),
@@ -338,7 +605,9 @@ def create_app() -> Flask:
         if db_err is not None:
             return db_err
 
-        data = request.get_json(force=True, silent=False) or {}
+        data = request.get_json(force=True, silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"ok": False, "error": "Invalid request body"}), 400
         items = data.get("traits", [])
 
         if not isinstance(items, list) or len(items) > MAX_TRAITS:
@@ -455,8 +724,13 @@ def create_app() -> Flask:
         if not raw:
             return jsonify({"ok": False, "error": "Empty file"}), 400
 
+        # Only real PDFs: the file is served inline from this site, so never trust the
+        # browser-supplied content type (an HTML "resume" would run as a page here).
+        if b"%PDF-" not in raw[:1024]:
+            return jsonify({"ok": False, "error": "Resume must be a PDF file"}), 400
+
         locale = normalize_locale(request.form.get("locale", ""))
-        mimetype = f.mimetype or "application/pdf"
+        mimetype = "application/pdf"
 
         try:
             existing = ResumeFile.query.filter_by(locale=locale).first()
@@ -522,7 +796,9 @@ def create_app() -> Flask:
         if db_err is not None:
             return db_err
 
-        data = request.get_json(force=True, silent=False)
+        data = request.get_json(force=True, silent=True)
+        if not isinstance(data, dict):
+            abort(400)
         github = data.get("github", [])
         website = data.get("website", [])
 
@@ -535,8 +811,17 @@ def create_app() -> Flask:
                     abort(400)
                 label = (it.get("label") or "").strip()
                 url = (it.get("url") or "").strip()
+                if not label and not url:
+                    continue  # an untouched blank row
                 if not label or not url:
                     abort(400)
+                if url.startswith("//"):
+                    url = "https:" + url
+                if not re.match(r"^https?://", url, re.IGNORECASE):
+                    # Block javascript:, data: and other schemes; treat "github.com/x" as https.
+                    if re.match(r"^[a-z][a-z0-9+.-]*:(?!\d)", url, re.IGNORECASE):
+                        abort(400)
+                    url = "https://" + url.lstrip("/")
                 if len(label) > 80 or len(url) > 500:
                     abort(400)
                 out.append({"label": label, "url": url, "kind": kind})
@@ -593,7 +878,9 @@ def create_app() -> Flask:
         if db_err is not None:
             return db_err
 
-        data = request.get_json(force=True, silent=False)
+        data = request.get_json(force=True, silent=True)
+        if not isinstance(data, dict):
+            abort(400)
         items = data.get("accomplishments", [])
         if not isinstance(items, list) or len(items) > 20:
             abort(400)
@@ -603,7 +890,9 @@ def create_app() -> Flask:
             if not isinstance(it, dict):
                 abort(400)
             text_val = (it.get("text") or "").strip()
-            if not text_val or len(text_val) > 500:
+            if not text_val:
+                continue  # an untouched blank row
+            if len(text_val) > 500:
                 abort(400)
             validated.append(text_val)
 
@@ -626,6 +915,50 @@ def create_app() -> Flask:
                 ),
                 500,
             )
+
+    @app.get("/admin/api/messages")
+    @login_required
+    def admin_messages():
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+        try:
+            items = ContactMessage.query.order_by(ContactMessage.created_at.desc()).limit(200).all()
+            return jsonify(
+                {
+                    "messages": [
+                        {
+                            "id": m.id,
+                            "name": m.name,
+                            "email": m.email,
+                            "company": m.company,
+                            "reason": CONTACT_REASONS.get(m.reason, m.reason),
+                            "message": m.message,
+                            "created_at": m.created_at.isoformat() + "Z",
+                        }
+                        for m in items
+                    ]
+                }
+            )
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Loading messages failed: %s\n%s", exc, traceback.format_exc())
+            return jsonify({"ok": False, "error": "Failed to load messages"}), 500
+
+    @app.delete("/admin/api/messages/<int:message_id>")
+    @login_required
+    def admin_delete_message(message_id: int):
+        db_err = require_db_or_503()
+        if db_err is not None:
+            return db_err
+        try:
+            ContactMessage.query.filter_by(id=message_id).delete()
+            db.session.commit()
+            return jsonify({"ok": True})
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error("Message delete failed: %s\n%s", exc, traceback.format_exc())
+            return jsonify({"ok": False, "error": "Delete failed"}), 500
 
     return app
 

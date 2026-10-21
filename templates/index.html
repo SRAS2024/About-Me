@@ -1,16 +1,38 @@
-{% extends "base.html" %}
-{% block content %}
+<!DOCTYPE html>
+<!-- Homepage (index.html): the main entry point of the resume site.
+     Every public page is a complete HTML document: doctype, html, head with UTF-8,
+     the required title, one shared stylesheet, and the shared header and footer. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Samuel Simonds - Web Design and Technologies</title>
+    <meta name="description" content="Samuel Ryan Andrew Simonds, full stack engineer in Colorado Springs. Resume, experience, skills, projects and contact information." />
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <!-- FEATURE: External stylesheet. All presentation (type, color, spacing, layout, navigation) lives in one CSS file. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body>
+    {% include "partials/site_header.html" %}
+
+    <main id="main">
 
 <!-- ── About / Hero ────────────────────────────────────────── -->
+<!-- FEATURE: Profile image. The photo is uploaded in the admin panel, stored in PostgreSQL
+     and served from /assets/photo. -->
 <section class="section-wrap" id="about">
   <div class="container">
     <div class="hero-grid">
       <div class="hero-content">
-        <div class="section-label" data-i18n="about">About</div>
+        <h2 class="section-label" data-i18n="about">About</h2>
 
-        <p class="hero-tagline">Professional. Reliable. Customer focused.</p>
+        <h1 class="hero-tagline">Professional. Reliable. Customer focused.</h1>
 
-        <div class="traits" aria-label="Key traits">
+        <div class="traits" role="group" aria-label="Key traits">
           {% if traits is defined and traits|length > 0 %}
             {% for t in traits %}
               <span class="trait-pill">{{ t }}</span>
@@ -44,16 +66,18 @@
 </section>
 
 <!-- ── Resume (Inline viewer) ───────────────────────────────── -->
+<!-- FEATURE: Embedded resume. The PDF is uploaded per language in the admin panel and the
+     version that best matches the visitor's browser language is shown here. -->
 {% if has_resume %}
 <section class="section-wrap section-sage" id="resume">
   <div class="container">
-    <div class="section-label text-center" data-i18n="resume">Resume</div>
+    <h2 class="section-label text-center" data-i18n="resume">Resume</h2>
 
     <div class="resume-viewer" role="region" aria-label="Resume">
       <iframe
         class="resume-embed"
         title="Resume"
-        src="{{ url_for('asset_resume', locale=resume_locale) }}#view=FitW&navpanes=0"
+        src="{{ url_for('asset_resume', locale=resume_locale) }}#view=FitW&amp;navpanes=0"
         loading="lazy"
       ></iframe>
 
@@ -78,11 +102,11 @@
 {% if github_links|length > 0 or website_links|length > 0 %}
 <section class="section-wrap" id="portfolio">
   <div class="container">
-    <div class="section-label text-center" data-i18n="portfolio">Portfolio</div>
+    <h2 class="section-label text-center" data-i18n="portfolio">Portfolio</h2>
 
     <div class="portfolio-grid">
       <div>
-        <div class="portfolio-col-title" data-i18n="github">GitHub</div>
+        <h3 class="portfolio-col-title" data-i18n="github">GitHub</h3>
         {% for l in github_links %}
           <a class="link-card" href="{{ l.url }}" target="_blank" rel="noreferrer">
             <span class="link-card-label">{{ l.label }}</span>
@@ -92,7 +116,7 @@
       </div>
 
       <div>
-        <div class="portfolio-col-title" data-i18n="websites">Websites</div>
+        <h3 class="portfolio-col-title" data-i18n="websites">Websites</h3>
         {% for l in website_links %}
           <a class="link-card" href="{{ l.url }}" target="_blank" rel="noreferrer">
             <span class="link-card-label">{{ l.label }}</span>
@@ -109,7 +133,7 @@
 {% if accomplishments|length > 0 %}
 <section class="section-wrap section-dark" id="accomplishments">
   <div class="container">
-    <div class="section-label text-center section-label-light" data-i18n="accomplishments">Accomplishments</div>
+    <h2 class="section-label text-center section-label-light" data-i18n="accomplishments">Accomplishments</h2>
     <div class="accomplishment-list">
       {% for a in accomplishments %}
         <div class="accomplishment-item">
@@ -122,4 +146,37 @@
 </section>
 {% endif %}
 
-{% endblock %}
+<!-- ── Explore the rest of the site ────────────────────────── -->
+<section class="section-wrap" id="explore">
+  <div class="container">
+    <h2 class="section-label text-center">Explore</h2>
+    <div class="explore-grid">
+      <a class="link-card" href="{{ url_for('about') }}">
+        <span class="link-card-label">About me</span>
+        <span class="explore-text">My background, my objective and where I want to grow next.</span>
+      </a>
+      <a class="link-card" href="{{ url_for('experience') }}">
+        <span class="link-card-label">Experience</span>
+        <span class="explore-text">Employment history, from Apple to freelance full stack work.</span>
+      </a>
+      <a class="link-card" href="{{ url_for('skills') }}">
+        <span class="link-card-label">Education &amp; Skills</span>
+        <span class="explore-text">My degree, certification and a searchable list of skills.</span>
+      </a>
+      <a class="link-card" href="{{ url_for('projects') }}">
+        <span class="link-card-label">Projects</span>
+        <span class="explore-text">Client builds plus my public repositories, live from GitHub.</span>
+      </a>
+      <a class="link-card" href="{{ url_for('contact') }}">
+        <span class="link-card-label">Contact</span>
+        <span class="explore-text">Send me a message about a role, a project or anything else.</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+    </main>
+
+    {% include "partials/site_footer.html" %}
+  </body>
+</html>

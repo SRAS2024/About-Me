@@ -81,6 +81,12 @@
       <button class="btn-outline btn-sm" id="addAccompBtn" type="button">+ Add accomplishment</button>
     </div>
 
+    <!-- Contact messages (sent from the public Contact page; deleting is immediate) -->
+    <div class="admin-block">
+      <div class="admin-block-title">Contact Messages <span class="muted" id="messagesCount"></span></div>
+      <div id="messagesList" class="message-list"><p class="muted small">Loading&hellip;</p></div>
+    </div>
+
     <!-- Save -->
     <div class="admin-actions">
       <button class="btn" id="saveBtn" type="button">Save All Changes</button>
@@ -100,7 +106,7 @@
             <div class="section-label">About</div>
             <p class="hero-tagline">Professional. Reliable. Customer focused.</p>
 
-            <div class="traits" id="previewTraits" aria-label="Preview traits"></div>
+            <div class="traits" id="previewTraits" role="group" aria-label="Preview traits"></div>
 
             <p class="hero-desc">Full stack engineer with hands-on production builds and a strong customer-facing technical background.</p>
           </div>

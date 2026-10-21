@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 from typing import Tuple
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 try:
     import tinify  # type: ignore
@@ -24,6 +24,8 @@ def compress_image(
     Optional: if tinify_api_key is set and tinify is available, run TinyPNG after Pillow.
     """
     img = Image.open(io.BytesIO(raw_bytes))
+    # Phone photos store rotation in EXIF; apply it before the tag is dropped.
+    img = ImageOps.exif_transpose(img)
     img = img.convert("RGB")
 
     # Resize down if needed

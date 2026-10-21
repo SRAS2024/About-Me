@@ -1,9 +1,12 @@
 import os
+import secrets
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
+    # Set SECRET_KEY in Railway. Without it a random key is generated per process,
+    # which is safe but logs the admin out whenever the app restarts.
+    SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
     # Database
     # Railway commonly sets DATABASE_URL. Use it as the single source of truth.
@@ -34,7 +37,8 @@ class Config:
         try:
             parsed = urlparse(normalized)
             qs = dict(parse_qsl(parsed.query, keep_blank_values=True))
-            if "sslmode" not in qs:
+            local_hosts = ("localhost", "127.0.0.1", "::1", "db")
+            if "sslmode" not in qs and (parsed.hostname or "") not in local_hosts:
                 qs["sslmode"] = "require"
                 parsed = parsed._replace(query=urlencode(qs))
                 normalized = urlunparse(parsed)
@@ -57,8 +61,10 @@ class Config:
 
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB upload limit
 
-    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "SSimonds")
-    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "MariaEduarda")
+    # Admin credentials come only from the environment (Railway variables).
+    # If either is missing, admin login is disabled rather than falling back to a known value.
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "")
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
     # Optional TinyPNG key
     TINIFY_API_KEY = os.environ.get("TINIFY_API_KEY", "").strip()

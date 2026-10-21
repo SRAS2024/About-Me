@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Samuel Simonds - Web Design and Technologies</title>
+    <meta name="description" content="Projects by Samuel Simonds: client web applications and public GitHub repositories." />
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body>
+    {% include "partials/site_header.html" %}
+
+    <main id="main">
+      <header class="name-banner">
+        <h1 class="name-title">Projects</h1>
+        <p class="name-subtitle">Selected work and live repositories</p>
+      </header>
+
+      <section class="section-wrap">
+        <div class="container">
+          <h2 class="section-label text-center">Featured projects</h2>
+
+          <!-- FEATURE: Project images. Each card uses a figure with an img (width, height and alt text)
+               and a figcaption. The screenshots live in static/images/projects. -->
+          <div class="project-grid">
+            <article class="project-card">
+              <figure class="project-shot">
+                <img src="{{ url_for('static', filename='images/projects/darah-storefront.jpg') }}" alt="Home page of the DARAH Jewelry storefront with its logo, category menu and featured collections" width="1200" height="838" />
+                <figcaption>DARAH storefront home page (in Portuguese)</figcaption>
+              </figure>
+              <div class="project-body">
+                <h3>DARAH Jewelry storefront</h3>
+                <p>
+                  An online jewelry store for a brand in Mato Grosso, Brazil. Shoppers browse collections and order through a
+                  WhatsApp-style checkout, while the owners manage products, photos and homepage content from their own admin panel.
+                  The launch supported a reported <strong>15 percent sales increase</strong> the following quarter.
+                </p>
+                <ul class="tag-list" aria-label="Technologies used">
+                  <li class="skill-tag">Node.js</li>
+                  <li class="skill-tag">Express</li>
+                  <li class="skill-tag">PostgreSQL</li>
+                  <li class="skill-tag">JavaScript</li>
+                </ul>
+                <div class="project-links">
+                  <a class="btn-outline btn-sm" href="https://github.com/SRAS2024/DARAH" target="_blank" rel="noopener noreferrer">View code</a>
+                </div>
+              </div>
+            </article>
+
+            <article class="project-card">
+              <figure class="project-shot">
+                <img src="{{ url_for('static', filename='images/projects/in-tuned.jpg') }}" alt="The In Tuned emotion detector, with a text box on the left and scores for seven core emotions on the right" width="1200" height="750" />
+                <figcaption>In Tuned emotion detector</figcaption>
+              </figure>
+              <div class="project-body">
+                <h3>In Tuned reflection app</h3>
+                <p>
+                  A multilingual reflection and emotion-awareness app built for Alpine Family Counseling. Visitors write a short
+                  passage and see how it maps across seven core emotions; members can sign in and keep a private journal.
+                  The practice manages prompts and content from an admin area.
+                </p>
+                <ul class="tag-list" aria-label="Technologies used">
+                  <li class="skill-tag">Python</li>
+                  <li class="skill-tag">Flask</li>
+                  <li class="skill-tag">PostgreSQL</li>
+                </ul>
+                <div class="project-links">
+                  <a class="btn btn-sm" href="https://intunedreflection.com/" target="_blank" rel="noopener noreferrer">Visit site</a>
+                  <a class="btn-outline btn-sm" href="https://github.com/SRAS2024/In-Tuned" target="_blank" rel="noopener noreferrer">View code</a>
+                </div>
+              </div>
+            </article>
+
+            <article class="project-card">
+              <figure class="project-shot">
+                <img src="{{ url_for('static', filename='images/projects/about-me.jpg') }}" alt="The About Me page of this resume website, with an introduction, a portrait and an At a glance card" width="1200" height="750" />
+                <figcaption>This website's About page</figcaption>
+              </figure>
+              <div class="project-body">
+                <h3>This resume website</h3>
+                <p>
+                  The site you're on. It runs on Flask and PostgreSQL, with an admin panel where I upload my photo and resume,
+                  manage links and accomplishments, and preview changes live before saving. For my Web Design and Technologies
+                  final I grew it into six pages with an employment table, a searchable skills list, a GitHub feed and a validated contact form.
+                </p>
+                <ul class="tag-list" aria-label="Technologies used">
+                  <li class="skill-tag">Python</li>
+                  <li class="skill-tag">Flask</li>
+                  <li class="skill-tag">PostgreSQL</li>
+                  <li class="skill-tag">Docker</li>
+                  <li class="skill-tag">Railway</li>
+                </ul>
+                <div class="project-links">
+                  <a class="btn-outline btn-sm" href="https://github.com/SRAS2024/About-Me" target="_blank" rel="noopener noreferrer">View code</a>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-wrap section-sage">
+        <div class="container">
+          <h2 class="section-label text-center">Live from GitHub</h2>
+          <p class="section-intro text-center">
+            This list comes straight from the GitHub REST API every time the page loads, so it always shows my latest public work.
+          </p>
+
+          <!-- FEATURE: API integration. static/js/site.js calls the GitHub REST API
+               (GET https://api.github.com/users/SRAS2024/repos), then builds a card for each public
+               repository with its description, language and last update. The sort menu re-orders the cards. -->
+          <div class="repo-toolbar">
+            <p class="status-msg" id="repo-status" aria-live="polite">Loading repositories from GitHub&hellip;</p>
+            <div class="repo-sort">
+              <label class="label" for="repo-sort">Sort by</label>
+              <select class="input" id="repo-sort">
+                <option value="updated">Recently updated</option>
+                <option value="name">Name (A to Z)</option>
+                <option value="created">Newest first</option>
+              </select>
+            </div>
+          </div>
+          <div class="repo-grid" id="repo-list" data-github-user="SRAS2024"></div>
+          <noscript>
+            <p class="status-msg text-center">
+              Turn on JavaScript to load my repositories, or browse them at
+              <a href="https://github.com/SRAS2024">github.com/SRAS2024</a>.
+            </p>
+          </noscript>
+        </div>
+      </section>
+    </main>
+
+    {% include "partials/site_footer.html" %}
+  </body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Samuel Simonds - Web Design and Technologies</title>
+    <meta name="description" content="About Samuel Simonds: background, career objective, strengths and career goals." />
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body>
+    {% include "partials/site_header.html" %}
+
+    <main id="main">
+      <header class="name-banner">
+        <h1 class="name-title">About Me</h1>
+        <p class="name-subtitle">Full Stack Engineer &middot; Colorado Springs, Colorado</p>
+      </header>
+
+      <div class="section-wrap">
+        <div class="container about-grid">
+          <!-- FEATURE: Text formatting. This page uses headings (h1 to h2), paragraphs, strong and
+               emphasized text, a blockquote with a citation, abbreviations, a time element,
+               an unordered list, an ordered list and a description list. -->
+          <article class="prose">
+            <h2>Who I am</h2>
+            <p>
+              I'm <strong>Samuel Ryan Andrew Simonds</strong>, a full stack engineer based in Colorado Springs.
+              I came to software from the service side of technology. Since 2022 I've worked at
+              <strong>Apple</strong>, first as a Technical Specialist and now as a Technical Expert, diagnosing
+              hardware and software problems and explaining them to people who simply need their device to work again.
+            </p>
+            <p>
+              That job taught me something I bring to every project: a system is only as good as the experience of
+              the person using it. Since <time datetime="2025-11">November 2025</time> I've also been building full stack
+              web applications as a freelancer, including an online storefront for a jewelry brand in Brazil and an
+              emotional reflection app for a counseling practice here in Colorado.
+            </p>
+            <p>
+              I'm also low vision. At Apple I became the <em>first</em> low vision Technical Expert, a senior technician
+              role, by building repair workflows around accessibility. That experience is a big reason I care so much about
+              interfaces that are <em>easy to read and easy to use</em>.
+            </p>
+
+            <blockquote>
+              <p>To bridge people and technology through innovative and collaborative solutions that drive business success.</p>
+              <footer>My career objective, from <cite>my resume</cite></footer>
+            </blockquote>
+
+            <h2>What I bring</h2>
+            <ul>
+              <li><strong>End-to-end delivery.</strong> I've taken client projects from database design all the way to deployment: PostgreSQL schemas, REST APIs, admin tools and responsive front ends.</li>
+              <li><strong>Real troubleshooting experience.</strong> Years of diagnosing complex issues taught me to stay calm, isolate the problem and keep people informed while I fix it.</li>
+              <li><strong>Clear documentation.</strong> I write things down in detail, whether it's a repair note or a README, so the next person can pick up where I left off.</li>
+              <li><strong>Mentoring and training.</strong> I coach technicians and sales partners and build growth plans that fit changing business needs.</li>
+              <li><strong>Customer focus.</strong> I sold over <strong>$4 million</strong> in product during one year in sales at Apple, and I learned to listen before I recommend anything.</li>
+            </ul>
+
+            <h2>Career goals</h2>
+            <p>Here's where I'm headed over the next few years:</p>
+            <ol>
+              <li><strong>Join an engineering team full time</strong> in a full stack role where I can own features from the database to the interface.</li>
+              <li><strong>Make accessibility a default, not an afterthought,</strong> by building to <abbr title="Web Content Accessibility Guidelines">WCAG</abbr> standards and testing with assistive technology.</li>
+              <li><strong>Grow into technical leadership</strong> and use what I've learned mentoring technicians to help other developers grow.</li>
+              <li><strong>Keep learning</strong>, especially cloud deployment, automated testing and front end frameworks like React.</li>
+            </ol>
+          </article>
+
+          <aside class="about-aside">
+            <!-- FEATURE: Image element. A static copy of my portrait ships with the site in static/images. -->
+            <figure class="about-figure">
+              <div class="photo-frame">
+                <img class="profile-photo" src="{{ url_for('static', filename='images/samuel-simonds.jpg') }}" alt="Portrait of Samuel Simonds wearing a light knit polo" width="899" height="1200" />
+              </div>
+              <figcaption class="figure-caption">Samuel Simonds</figcaption>
+            </figure>
+
+            <div class="card">
+              <h2 class="section-label">At a glance</h2>
+              <dl class="fact-list">
+                <dt>Based in</dt>
+                <dd>Colorado Springs, Colorado</dd>
+                <dt>Focus</dt>
+                <dd>Full stack web development</dd>
+                <dt>Current role</dt>
+                <dd>Technical Expert at Apple and freelance full stack engineer</dd>
+                <dt>Education</dt>
+                <dd><abbr title="Bachelor of Business Administration">BBA</abbr>, Management and Organizational Leadership, UMass Global</dd>
+                <dt>Certification</dt>
+                <dd>IBM Full Stack Engineering, 2025</dd>
+                <dt>Email</dt>
+                <dd><a href="mailto:samuelrasimonds@gmail.com">samuelrasimonds@gmail.com</a></dd>
+              </dl>
+              <a class="btn btn-block" href="{{ url_for('contact') }}">Get in touch</a>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    {% include "partials/site_footer.html" %}
+  </body>
+</html>

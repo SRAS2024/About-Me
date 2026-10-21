@@ -60,3 +60,17 @@ class Trait(db.Model):
     text = db.Column(db.Text, nullable=False)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
+class ContactMessage(db.Model):
+    """A message sent through the public contact form (read in the admin panel)."""
+
+    __tablename__ = "contact_message"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Text, nullable=False)
+    email = db.Column(db.Text, nullable=False)
+    company = db.Column(db.Text, nullable=False, default="")
+    reason = db.Column(db.Text, nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

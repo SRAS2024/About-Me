@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Samuel Simonds - Web Design and Technologies</title>
+    <meta name="description" content="Contact Samuel Simonds about a job opportunity, a freelance project or networking." />
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body>
+    {% include "partials/site_header.html" %}
+
+    <main id="main">
+      <header class="name-banner">
+        <h1 class="name-title">Contact</h1>
+        <p class="name-subtitle">Let's work together</p>
+      </header>
+
+      <section class="section-wrap">
+        <div class="container contact-grid">
+          <div class="card">
+            <h2 class="form-title">Send me a message</h2>
+            <p class="form-intro">
+              Recruiters, hiring managers and potential clients are all welcome. Fields marked
+              <span class="required-mark" aria-hidden="true">*</span> are required.
+            </p>
+
+            <!-- FEATURE: HTML form with validation. The browser checks each field as you leave it and
+                 again on submit (static/js/site.js): required fields, name length, email format, a chosen
+                 reason, a 20 to 2,000 character message and the consent box. Errors appear under each field
+                 and the first problem gets focus. The server repeats every check (validate_contact in app.py)
+                 before saving the message to PostgreSQL. Without JavaScript the form still posts normally. -->
+            <form id="contact-form" class="contact-form" action="{{ url_for('contact_post') }}" method="post" data-api="{{ url_for('api_contact') }}" novalidate>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label" for="name">Full name <span class="required-mark" aria-hidden="true">*</span></label>
+                  <input class="input{% if errors.name %} is-invalid{% endif %}" id="name" name="name" type="text" autocomplete="name"
+                         required minlength="2" maxlength="80" value="{{ form.name or '' }}"
+                         aria-describedby="name-error"{% if errors.name %} aria-invalid="true"{% endif %} />
+                  <p class="field-error" id="name-error">{{ errors.name or '' }}</p>
+                </div>
+
+                <div class="form-group">
+                  <label class="label" for="email">Email <span class="required-mark" aria-hidden="true">*</span></label>
+                  <input class="input{% if errors.email %} is-invalid{% endif %}" id="email" name="email" type="email" autocomplete="email"
+                         required maxlength="254" placeholder="name@example.com" value="{{ form.email or '' }}"
+                         aria-describedby="email-error"{% if errors.email %} aria-invalid="true"{% endif %} />
+                  <p class="field-error" id="email-error">{{ errors.email or '' }}</p>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label" for="company">Company <span class="optional-note">(optional)</span></label>
+                  <input class="input{% if errors.company %} is-invalid{% endif %}" id="company" name="company" type="text" autocomplete="organization"
+                         maxlength="100" value="{{ form.company or '' }}"
+                         aria-describedby="company-error"{% if errors.company %} aria-invalid="true"{% endif %} />
+                  <p class="field-error" id="company-error">{{ errors.company or '' }}</p>
+                </div>
+
+                <div class="form-group">
+                  <label class="label" for="reason">Reason for reaching out <span class="required-mark" aria-hidden="true">*</span></label>
+                  <select class="input{% if errors.reason %} is-invalid{% endif %}" id="reason" name="reason" required
+                          aria-describedby="reason-error"{% if errors.reason %} aria-invalid="true"{% endif %}>
+                    <option value=""{% if not form.reason %} selected{% endif %}>Choose one&hellip;</option>
+                    {% for value, label in reasons.items() %}
+                      <option value="{{ value }}"{% if form.reason == value %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <p class="field-error" id="reason-error">{{ errors.reason or '' }}</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="label" for="message">Message <span class="required-mark" aria-hidden="true">*</span></label>
+                <textarea class="input{% if errors.message %} is-invalid{% endif %}" id="message" name="message" rows="6"
+                          required minlength="20" maxlength="2000"
+                          aria-describedby="message-error message-count"{% if errors.message %} aria-invalid="true"{% endif %}>{{ form.message or '' }}</textarea>
+                <div class="field-meta">
+                  <p class="field-error" id="message-error">{{ errors.message or '' }}</p>
+                  <p class="field-hint" id="message-count">At least 20 characters</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="check" for="consent">
+                  <input id="consent" name="consent" type="checkbox" required{% if form.consent %} checked{% endif %}
+                         aria-describedby="consent-error"{% if errors.consent %} aria-invalid="true"{% endif %} />
+                  <span>It's okay to store my message so Samuel can reply. <span class="required-mark" aria-hidden="true">*</span></span>
+                </label>
+                <p class="field-error" id="consent-error">{{ errors.consent or '' }}</p>
+              </div>
+
+              <!-- Hidden from people; bots that fill it in are ignored. -->
+              <div class="hp-field" aria-hidden="true">
+                <label for="website">Leave this field empty</label>
+                <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+              </div>
+
+              <div class="form-actions">
+                <button class="btn" id="contact-submit" type="submit">Send message</button>
+                <button class="btn-outline" type="reset">Clear form</button>
+              </div>
+
+              <div class="form-status{% if sent %} is-success{% elif errors %} is-error{% endif %}" id="form-status" role="status" aria-live="polite"{% if not sent and not errors %} hidden{% endif %}>
+                {% if sent %}
+                  Thanks! Your message was sent. I'll get back to you soon.
+                {% elif errors.form %}
+                  {{ errors.form }}
+                {% elif errors %}
+                  Please fix the highlighted fields and try again.
+                {% endif %}
+              </div>
+            </form>
+          </div>
+
+          <aside class="card contact-aside">
+            <h2 class="section-label">Other ways to reach me</h2>
+            <ul class="contact-list">
+              <li>
+                <span class="contact-label">Email</span>
+                <a href="mailto:samuelrasimonds@gmail.com">samuelrasimonds@gmail.com</a>
+              </li>
+              <li>
+                <span class="contact-label">GitHub</span>
+                <a href="https://github.com/SRAS2024" target="_blank" rel="noopener noreferrer">github.com/SRAS2024</a>
+              </li>
+              <li>
+                <span class="contact-label">Location</span>
+                <address>Colorado Springs, Colorado</address>
+              </li>
+            </ul>
+            <p class="contact-note">I read every message myself and reply as soon as I can.</p>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    {% include "partials/site_footer.html" %}
+  </body>
+</html>

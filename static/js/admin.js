@@ -6,7 +6,10 @@
   var github = (S.github || []).map(function (l) { return Object.assign({}, l); });
   var website = (S.website || []).map(function (l) { return Object.assign({}, l); });
   var accomplishments = (S.accomplishments || []).map(function (a) { return Object.assign({}, a); });
-  var traits = (S.traits || []).map(function (t) { return Object.assign({}, t); });
+  // Traits arrive as plain strings; wrap them so the editor can read .text.
+  var traits = (S.traits || []).map(function (t) {
+    return typeof t === "string" ? { text: t } : Object.assign({}, t);
+  });
 
   var photoExists = !!S.photoExists;
   var photoPreviewURL = photoExists ? "/assets/photo?" + Date.now() : null;
@@ -44,6 +47,9 @@
   var resumeInput = $id("resumeInput");
   var resumeLocale = $id("resumeLocale");
   var resumeListHint = $id("resumeListHint");
+
+  var messagesList = $id("messagesList");
+  var messagesCount = $id("messagesCount");
 
   // Preview refs
   var previewPhoto = $id("previewPhoto");
@@ -502,20 +508,33 @@
   }
 
   /* ── Save all ─────────────────────────────────────────────────── */
+  function trimmed(s) { return (s || "").trim(); }
+
   if (saveBtn) {
     saveBtn.addEventListener("click", function () {
+      // Drop rows that were added but never filled in; stop on half-filled links.
+      var githubOut = github.filter(function (l) { return trimmed(l.label) || trimmed(l.url); });
+      var websiteOut = website.filter(function (l) { return trimmed(l.label) || trimmed(l.url); });
+      var accompOut = accomplishments.filter(function (a) { return trimmed(a.text); });
+      var halfFilled = githubOut.concat(websiteOut).some(function (l) { return !trimmed(l.label) || !trimmed(l.url); });
+      if (halfFilled) {
+        saveStatus.textContent = "";
+        alert("Each link needs both a label and a URL. Fill in or remove the incomplete row, then save again.");
+        return;
+      }
+
       saveStatus.textContent = "Saving\u2026";
 
       var p1 = fetchJson("/admin/api/links", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ github: github, website: website })
+        body: JSON.stringify({ github: githubOut, website: websiteOut })
       });
 
       var p2 = fetchJson("/admin/api/accomplishments", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accomplishments: accomplishments })
+        body: JSON.stringify({ accomplishments: accompOut })
       });
 
       var p3 = fetchJson("/admin/api/traits", {
@@ -540,6 +559,84 @@
           showError("Save failed.", err);
         });
     });
+  }
+
+  /* ── Contact messages (from the public Contact page) ──────────── */
+  function formatWhen(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+
+  function renderMessages(messages) {
+    if (!messagesList) return;
+    messagesList.innerHTML = "";
+    if (messagesCount) messagesCount.textContent = messages.length ? "(" + messages.length + ")" : "";
+    if (!messages.length) {
+      messagesList.innerHTML = '<p class="muted small">No messages yet.</p>';
+      return;
+    }
+    messages.forEach(function (m) {
+      var item = document.createElement("div");
+      item.className = "message-item";
+
+      var head = document.createElement("div");
+      head.className = "message-head";
+
+      var who = document.createElement("div");
+      var from = document.createElement("div");
+      from.className = "message-from";
+      from.textContent = m.name + (m.company ? " \u00b7 " + m.company : "");
+      var meta = document.createElement("div");
+      meta.className = "message-meta";
+      // Only link addresses that look like plain email addresses, so a stored value
+      // can't smuggle cc/bcc/body parameters into the reply link.
+      var mail;
+      if (/^[^\s@?#&=%\/]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(m.email)) {
+        mail = document.createElement("a");
+        mail.href = "mailto:" + m.email;
+      } else {
+        mail = document.createElement("span");
+      }
+      mail.textContent = m.email;
+      meta.appendChild(mail);
+      meta.appendChild(document.createTextNode(" \u00b7 " + m.reason + " \u00b7 " + formatWhen(m.created_at)));
+      who.append(from, meta);
+
+      var rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "remove-link";
+      rm.setAttribute("aria-label", "Delete message from " + m.name);
+      rm.textContent = "\u00d7";
+      rm.addEventListener("click", function () {
+        if (!confirm("Delete this message from " + m.name + "?")) return;
+        fetchJson("/admin/api/messages/" + encodeURIComponent(m.id), { method: "DELETE" })
+          .then(loadMessages)
+          .catch(function (err) { showError("Delete failed.", err); });
+      });
+
+      head.append(who, rm);
+
+      var body = document.createElement("div");
+      body.className = "message-body";
+      body.textContent = m.message;
+
+      item.append(head, body);
+      messagesList.appendChild(item);
+    });
+  }
+
+  function loadMessages() {
+    if (!messagesList) return;
+    fetchJson("/admin/api/messages", { method: "GET" })
+      .then(function (data) { renderMessages((data && data.messages) || []); })
+      .catch(function (err) {
+        messagesList.innerHTML = "";
+        var p = document.createElement("p");
+        p.className = "muted small";
+        p.textContent = "Couldn't load messages: " + (err && err.message ? err.message : "unknown error");
+        messagesList.appendChild(p);
+      });
   }
 
   /* ── Refresh full state ───────────────────────────────────────── */
@@ -580,6 +677,7 @@
   renderAccompEditor();
   renderResumeList();
   renderPreview();
+  loadMessages();
 
   // Initialize resume iframe source on load
   if (previewResumeFrame) {
