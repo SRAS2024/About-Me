@@ -407,6 +407,91 @@
     updateCounter();
   }
 
+  /* ── Resume: draw every PDF page into the page with PDF.js ────── */
+  function initResumeViewer() {
+    var doc = $("#resume-doc");
+    var pages = $("#resume-pages");
+    if (!doc || !pages) return;
+
+    var src = doc.getAttribute("data-src");
+    var lib = window.pdfjsLib;
+    var pdf = null;
+    var renderedWidth = 0;
+    var busy = false;
+
+    function showFallback() {
+      pages.innerHTML = "";
+      var p = document.createElement("p");
+      p.className = "resume-status";
+      p.appendChild(document.createTextNode("The resume preview couldn't load here. "));
+      var a = document.createElement("a");
+      a.href = src;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "Open the PDF instead";
+      p.appendChild(a);
+      p.appendChild(document.createTextNode("."));
+      pages.appendChild(p);
+    }
+
+    // Render at the container's current width (times the screen's pixel density so text stays sharp).
+    function render() {
+      if (!pdf || busy) return;
+      var width = pages.clientWidth;
+      if (!width || Math.abs(width - renderedWidth) < 2) return;
+      busy = true;
+      renderedWidth = width;
+      var density = Math.min(window.devicePixelRatio || 1, 3);
+      var loads = [];
+      for (var n = 1; n <= pdf.numPages; n++) loads.push(pdf.getPage(n));
+
+      Promise.all(loads)
+        .then(function (list) {
+          var canvases = [];
+          var draws = list.map(function (page, i) {
+            var base = page.getViewport({ scale: 1 });
+            var viewport = page.getViewport({ scale: (width / base.width) * density });
+            var canvas = document.createElement("canvas");
+            canvas.className = "resume-page";
+            canvas.width = Math.floor(viewport.width);
+            canvas.height = Math.floor(viewport.height);
+            canvas.setAttribute("role", "img");
+            canvas.setAttribute("aria-label", "Resume of Samuel Ryan Andrew Simonds, page " + (i + 1) + " of " + list.length);
+            canvases.push(canvas);
+            return page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise;
+          });
+          return Promise.all(draws).then(function () {
+            // Swap in the finished pages at once so there is no flicker.
+            pages.innerHTML = "";
+            canvases.forEach(function (c) { pages.appendChild(c); });
+          });
+        })
+        .catch(function (err) {
+          if (window.console) console.warn(err);
+          showFallback();
+        })
+        .then(function () {
+          busy = false;
+          if (Math.abs(pages.clientWidth - renderedWidth) >= 2) render();
+        });
+    }
+
+    if (!lib || !src) { showFallback(); return; }
+    lib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    lib.getDocument(src).promise
+      .then(function (loaded) { pdf = loaded; render(); })
+      .catch(function (err) {
+        if (window.console) console.warn(err);
+        showFallback();
+      });
+
+    var timer = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(timer);
+      timer = setTimeout(render, 150);
+    });
+  }
+
   /* ── Footer year ──────────────────────────────────────────────── */
   function initYear() {
     $$("[data-year]").forEach(function (node) { node.textContent = String(new Date().getFullYear()); });
@@ -416,5 +501,6 @@
   initSkillsFilter();
   initGitHubRepos();
   initContactForm();
+  initResumeViewer();
   initYear();
 })();

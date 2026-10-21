@@ -273,6 +273,14 @@ def create_app() -> Flask:
         ok, msg = db_ping()
         return jsonify({"status": "ok", "db_ok": ok, "db": msg}), 200
 
+    # The bare domain forwards to the main www address, keeping the path and query.
+    @app.before_request
+    def redirect_bare_domain():
+        host = (request.host or "").split(":")[0].lower()
+        if host == "ssimonds.com":
+            return redirect("https://www.ssimonds.com" + request.full_path.rstrip("?"), code=301)
+        return None
+
     # Browsers ask for /favicon.ico on their own; point them at the SVG icon.
     @app.get("/favicon.ico")
     def favicon():
@@ -280,7 +288,7 @@ def create_app() -> Flask:
 
     # ── Search engines ────────────────────────────────────────────
     # Public URLs always use the main domain so Google indexes one address per page.
-    SITE_URL = os.environ.get("SITE_URL", "https://ssimonds.com").rstrip("/")
+    SITE_URL = os.environ.get("SITE_URL", "https://www.ssimonds.com").rstrip("/")
 
     @app.get("/robots.txt")
     def robots_txt():
@@ -318,7 +326,7 @@ def create_app() -> Flask:
             active = "contact"
         # One canonical address per page (the Railway URL also serves the site).
         path = "/" if request.path == "/index.html" else request.path
-        canonical_url = os.environ.get("SITE_URL", "https://ssimonds.com").rstrip("/") + path
+        canonical_url = os.environ.get("SITE_URL", "https://www.ssimonds.com").rstrip("/") + path
         return {
             "nav_pages": NAV_PAGES,
             "active_page": active,

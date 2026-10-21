@@ -12,7 +12,7 @@
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" />
     <!-- FEATURE: External stylesheet. All presentation (type, color, spacing, layout, navigation) lives in one CSS file. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
     <script>document.documentElement.classList.add("js");</script>
@@ -22,78 +22,72 @@
 
     <main id="main">
 
-<!-- ── About / Hero ────────────────────────────────────────── -->
+<!-- ── Hero ─────────────────────────────────────────────────── -->
 <!-- FEATURE: Profile image. The photo is uploaded in the admin panel, stored in PostgreSQL
-     and served from /assets/photo. -->
-<section class="section-wrap" id="about">
-  <div class="container">
-    <div class="hero-grid">
-      <div class="hero-content">
-        <h2 class="section-label" data-i18n="about">About</h2>
-
-        <h1 class="hero-tagline">Professional. Reliable. Customer focused.</h1>
-
-        <div class="traits" role="group" aria-label="Key traits">
-          {% if traits is defined and traits|length > 0 %}
-            {% for t in traits %}
-              <span class="trait-pill">{{ t }}</span>
-            {% endfor %}
-          {% else %}
-            <span class="trait-pill">Professional</span>
-            <span class="trait-pill">Reliable</span>
-            <span class="trait-pill">Customer focused</span>
-          {% endif %}
+     and served from /assets/photo. The hero is centered so the page reads symmetrically. -->
+<section class="hero" id="about">
+  <div class="container hero-center">
+    <div class="photo-frame hero-portrait">
+      {% if photo_exists %}
+        <img class="profile-photo" src="{{ url_for('asset_photo') }}" alt="Portrait of Samuel Ryan Andrew Simonds" />
+      {% else %}
+        <div class="photo-placeholder">
+          <span class="muted" data-i18n="noPhoto">No photo uploaded</span>
         </div>
+      {% endif %}
+    </div>
 
-        <p class="hero-desc">
-          Full stack engineer with hands-on production builds and a strong customer-facing technical background.
-          I ship clean systems, document well, and troubleshoot across the stack.
-        </p>
-      </div>
+    <h1 class="hero-name">Samuel Ryan Andrew Simonds</h1>
+    <p class="hero-role"><span class="role-part">Technical Support Engineer</span><span class="role-sep" aria-hidden="true"> &middot; </span><span class="role-part">Full Stack Developer</span></p>
 
-      <div class="hero-photo">
-        <div class="photo-frame">
-          {% if photo_exists %}
-            <img class="profile-photo" src="{{ url_for('asset_photo') }}" alt="Samuel Ryan Andrew Simonds" />
-          {% else %}
-            <div class="photo-placeholder">
-              <span class="muted" data-i18n="noPhoto">No photo uploaded</span>
-            </div>
-          {% endif %}
-        </div>
-      </div>
+    <div class="traits" role="group" aria-label="Key traits">
+      {% if traits is defined and traits|length > 0 %}
+        {% for t in traits %}
+          <span class="trait-pill">{{ t }}</span>
+        {% endfor %}
+      {% else %}
+        <span class="trait-pill">Professional</span>
+        <span class="trait-pill">Reliable</span>
+        <span class="trait-pill">Customer focused</span>
+      {% endif %}
+    </div>
+
+    <p class="hero-desc">
+      Technical support engineer and full stack developer with hands-on production builds and a strong
+      customer-facing technical background. I ship clean systems, document well, and troubleshoot across the stack.
+    </p>
+
+    <div class="hero-actions">
+      {% if has_resume %}<a class="btn" href="#resume">View resume</a>{% endif %}
+      <a class="btn-outline" href="{{ url_for('contact') }}">Get in touch</a>
     </div>
   </div>
 </section>
 
-<!-- ── Resume (Inline viewer) ───────────────────────────────── -->
+<!-- ── Resume (rendered into the page) ──────────────────────── -->
 <!-- FEATURE: Embedded resume. The PDF is uploaded per language in the admin panel and the
-     version that best matches the visitor's browser language is shown here. -->
+     version that best matches the visitor's browser language is drawn page by page with
+     PDF.js (static/js/site.js), so the whole resume shows at full width with no inner scrollbar. -->
 {% if has_resume %}
 <section class="section-wrap section-sage" id="resume">
   <div class="container">
     <h2 class="section-label text-center" data-i18n="resume">Resume</h2>
 
-    <div class="resume-viewer" role="region" aria-label="Resume">
-      <iframe
-        class="resume-embed"
-        title="Resume"
-        src="{{ url_for('asset_resume', locale=resume_locale) }}#view=FitW&amp;navpanes=0"
-        loading="lazy"
-      ></iframe>
-
-      <div class="text-center" style="margin-top:12px">
-        <a class="btn-outline btn-sm" href="{{ url_for('asset_resume', locale=resume_locale) }}" target="_blank" rel="noreferrer" data-i18n="download">
-          Download Resume
-        </a>
+    <div class="resume-doc" id="resume-doc" data-src="{{ url_for('asset_resume', locale=resume_locale) }}" role="region" aria-label="Resume">
+      <div class="resume-pages" id="resume-pages" aria-live="polite">
+        <p class="resume-status">Loading resume&hellip;</p>
       </div>
-
       <noscript>
-        <div class="resume-fallback">
-          JavaScript is disabled. You can open the resume file directly:
-          <a href="{{ url_for('asset_resume', locale=resume_locale) }}">Resume</a>
-        </div>
+        <p class="resume-status">
+          Turn on JavaScript to view the resume here, or
+          <a href="{{ url_for('asset_resume', locale=resume_locale) }}">open the PDF</a>.
+        </p>
       </noscript>
+    </div>
+
+    <div class="resume-actions">
+      <a class="btn" href="{{ url_for('asset_resume', locale=resume_locale) }}" download="Samuel Simonds Resume.pdf" data-i18n="download">Download Resume</a>
+      <a class="btn-outline" href="{{ url_for('asset_resume', locale=resume_locale) }}" target="_blank" rel="noopener">Open PDF in a new tab</a>
     </div>
   </div>
 </section>
@@ -178,6 +172,10 @@
 
     </main>
 
+    {% if has_resume %}
+    <!-- PDF.js (Mozilla) draws the resume PDF into the page. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    {% endif %}
     {% include "partials/site_footer.html" %}
   </body>
 </html>
