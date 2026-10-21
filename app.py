@@ -278,6 +278,35 @@ def create_app() -> Flask:
     def favicon():
         return redirect(url_for("static", filename="images/favicon.svg"), code=301)
 
+    # ── Search engines ────────────────────────────────────────────
+    # Public URLs always use the main domain so Google indexes one address per page.
+    SITE_URL = os.environ.get("SITE_URL", "https://ssimonds.com").rstrip("/")
+
+    @app.get("/robots.txt")
+    def robots_txt():
+        body = f"User-agent: *\nDisallow: /admin\nDisallow: /api/\n\nSitemap: {SITE_URL}/sitemap.xml\n"
+        return app.response_class(body, mimetype="text/plain")
+
+    # Google Search Console ownership file (HTML file verification method, account samuelrasimonds@gmail.com).
+    GOOGLE_VERIFICATION_FILE = "google0292583cfdf40074.html"
+
+    @app.get(f"/{GOOGLE_VERIFICATION_FILE}")
+    def google_site_verification():
+        return app.response_class(
+            f"google-site-verification: {GOOGLE_VERIFICATION_FILE}", mimetype="text/html"
+        )
+
+    @app.get("/sitemap.xml")
+    def sitemap_xml():
+        paths = ["/"] + [url_for(p["endpoint"]) for p in NAV_PAGES if p["endpoint"] != "index"]
+        urls = "".join(f"  <url><loc>{SITE_URL}{path}</loc></url>\n" for path in paths)
+        body = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            f"{urls}</urlset>\n"
+        )
+        return app.response_class(body, mimetype="application/xml")
+
     # ── Public Routes ─────────────────────────────────────────────
 
     @app.context_processor
@@ -287,7 +316,15 @@ def create_app() -> Flask:
             active = "index"
         elif active == "contact_post":
             active = "contact"
-        return {"nav_pages": NAV_PAGES, "active_page": active, "current_year": datetime.now().year}
+        # One canonical address per page (the Railway URL also serves the site).
+        path = "/" if request.path == "/index.html" else request.path
+        canonical_url = os.environ.get("SITE_URL", "https://ssimonds.com").rstrip("/") + path
+        return {
+            "nav_pages": NAV_PAGES,
+            "active_page": active,
+            "current_year": datetime.now().year,
+            "canonical_url": canonical_url,
+        }
 
     # ── Contact form throttle (per visitor, in memory) ────────────
     contact_hits: Dict[str, List[float]] = {}

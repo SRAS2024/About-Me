@@ -2,7 +2,7 @@
 
 A full-stack personal resume website built with Flask and PostgreSQL. It showcases my profile, resume, experience, skills, projects, and accomplishments, and it is managed through an authenticated admin panel with live preview.
 
-**Live site:** [https://about-me-production-361e.up.railway.app](https://about-me-production-361e.up.railway.app)
+**Live site:** [https://ssimonds.com](https://ssimonds.com) (also served at [about-me-production-361e.up.railway.app](https://about-me-production-361e.up.railway.app))
 
 ---
 
