@@ -1,4 +1,4 @@
-/* ── Public site JS: navigation, skills filter, GitHub API, contact form ── */
+/* ── Public site JS: navigation, skills filter, local time and weather API, contact form, resume ── */
 (function () {
   "use strict";
 
@@ -68,140 +68,78 @@
     apply();
   }
 
-  /* ── GitHub REST API: public repositories ─────────────────────── */
-  function initGitHubRepos() {
-    var list = $("#repo-list");
-    if (!list) return;
+  /* ── Local time and weather in Colorado Springs (Open-Meteo API) ── */
+  function initLocalConditions() {
+    var box = $("#local-conditions");
+    if (!box) return;
 
-    var user = list.getAttribute("data-github-user");
-    var status = $("#repo-status");
-    var sortSelect = $("#repo-sort");
-    var cacheKey = "gh-repos:" + user;
-    var cacheMs = 10 * 60 * 1000;
-    var repos = [];
+    var tz = box.getAttribute("data-tz");
+    var lat = box.getAttribute("data-lat");
+    var lon = box.getAttribute("data-lon");
+    var timeEl = $("#local-time");
+    var weatherEl = $("#local-weather");
+    var cacheKey = "local-weather:" + lat + "," + lon;
+    var cacheMs = 15 * 60 * 1000;
 
-    function formatDate(iso) {
-      var d = new Date(iso);
-      if (isNaN(d.getTime())) return "";
-      return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+    // WMO weather codes returned by Open-Meteo, in plain words.
+    var CONDITIONS = {
+      0: "clear skies", 1: "mostly clear", 2: "partly cloudy", 3: "overcast",
+      45: "fog", 48: "freezing fog",
+      51: "light drizzle", 53: "drizzle", 55: "heavy drizzle", 56: "freezing drizzle", 57: "freezing drizzle",
+      61: "light rain", 63: "rain", 65: "heavy rain", 66: "freezing rain", 67: "freezing rain",
+      71: "light snow", 73: "snow", 75: "heavy snow", 77: "snow grains",
+      80: "rain showers", 81: "rain showers", 82: "heavy rain showers",
+      85: "snow showers", 86: "heavy snow showers",
+      95: "thunderstorms", 96: "thunderstorms with hail", 99: "thunderstorms with hail"
+    };
+
+    function showTime() {
+      if (!timeEl) return;
+      var now = new Date();
+      var text = now.toLocaleString("en-US", { timeZone: tz, weekday: "long", hour: "numeric", minute: "2-digit" });
+      timeEl.textContent = text + " Mountain Time";
     }
 
-    function makeCard(repo) {
-      var card = document.createElement("a");
-      card.className = "link-card repo-card";
-      card.href = repo.html_url;
-      card.target = "_blank";
-      card.rel = "noopener noreferrer";
-
-      var name = document.createElement("span");
-      name.className = "link-card-label";
-      name.textContent = repo.name;
-
-      var desc = document.createElement("span");
-      desc.className = "repo-desc";
-      desc.textContent = repo.description || "No description yet.";
-
-      var meta = document.createElement("span");
-      meta.className = "repo-meta";
-      if (repo.language) {
-        var lang = document.createElement("span");
-        lang.className = "repo-lang";
-        lang.textContent = repo.language;
-        meta.appendChild(lang);
-      }
-      var updated = document.createElement("span");
-      updated.textContent = "Updated " + formatDate(repo.pushed_at);
-      meta.appendChild(updated);
-      if (repo.stargazers_count > 0) {
-        var stars = document.createElement("span");
-        stars.textContent = repo.stargazers_count + (repo.stargazers_count === 1 ? " star" : " stars");
-        meta.appendChild(stars);
-      }
-
-      card.appendChild(name);
-      card.appendChild(desc);
-      card.appendChild(meta);
-      return card;
+    function showWeather(current) {
+      var temp = Math.round(current.temperature_2m);
+      var words = CONDITIONS[current.weather_code] || "current conditions unavailable";
+      weatherEl.textContent = temp + "\u00b0F and " + words;
     }
 
-    function render() {
-      var by = sortSelect ? sortSelect.value : "updated";
-      var sorted = repos.slice().sort(function (a, b) {
-        if (by === "name") return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
-        if (by === "created") return new Date(b.created_at) - new Date(a.created_at);
-        return new Date(b.pushed_at) - new Date(a.pushed_at);
-      });
-      list.innerHTML = "";
-      sorted.forEach(function (repo) { list.appendChild(makeCard(repo)); });
-      if (status) {
-        status.textContent = repos.length
-          ? repos.length + " public " + (repos.length === 1 ? "repository" : "repositories") + ", loaded live from the GitHub API."
-          : "No public repositories to show yet.";
-      }
-    }
+    showTime();
+    setInterval(showTime, 30 * 1000);
+    if (!weatherEl) return;
 
-    function showError() {
-      list.innerHTML = "";
-      if (!status) return;
-      status.textContent = "GitHub couldn't be reached right now. You can still browse my work at ";
-      var link = document.createElement("a");
-      link.href = "https://github.com/" + user;
-      link.textContent = "github.com/" + user;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      status.appendChild(link);
-      status.appendChild(document.createTextNode("."));
-    }
-
-    // Keep only the fields the cards use, so the cached copy stays small.
-    function slim(repo) {
-      return {
-        name: repo.name,
-        html_url: repo.html_url,
-        description: repo.description,
-        language: repo.language,
-        stargazers_count: repo.stargazers_count || 0,
-        pushed_at: repo.pushed_at,
-        created_at: repo.created_at
-      };
-    }
-
-    if (sortSelect) {
-      sortSelect.addEventListener("change", function () {
-        if (repos.length) render();
-      });
-    }
-
-    // A short session cache keeps repeat visits fast and well under GitHub's rate limit.
+    // Weather only changes every 15 minutes upstream, so reuse a recent answer.
     try {
       var cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
-      if (cached && Array.isArray(cached.data) && Date.now() - cached.savedAt < cacheMs) {
-        repos = cached.data;
-        render();
+      if (cached && cached.current && Date.now() - cached.savedAt < cacheMs) {
+        showWeather(cached.current);
         return;
       }
     } catch (_e) { /* storage blocked: just fetch */ }
 
-    fetch("https://api.github.com/users/" + encodeURIComponent(user) + "/repos?per_page=100&sort=pushed", {
-      headers: { Accept: "application/vnd.github+json" }
-    })
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(lat) +
+      "&longitude=" + encodeURIComponent(lon) +
+      "&current=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=" + encodeURIComponent(tz);
+
+    fetch(url)
       .then(function (res) {
-        if (!res.ok) throw new Error("GitHub responded with HTTP " + res.status);
+        if (!res.ok) throw new Error("Open-Meteo responded with HTTP " + res.status);
         return res.json();
       })
       .then(function (data) {
-        if (!Array.isArray(data)) throw new Error("Unexpected response from GitHub");
-        repos = data
-          .filter(function (r) { return !r.fork && !r.archived && !r.private; })
-          .map(slim);
+        if (!data || !data.current || typeof data.current.temperature_2m !== "number") {
+          throw new Error("Unexpected response from Open-Meteo");
+        }
+        showWeather(data.current);
         try {
-          sessionStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), data: repos }));
+          sessionStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), current: data.current }));
         } catch (_e) { /* storage full or blocked */ }
-        render();
       })
       .catch(function (err) {
         if (window.console) console.warn(err);
-        showError();
+        weatherEl.textContent = "The weather is unavailable right now.";
       });
   }
 
@@ -499,7 +437,7 @@
 
   initNavToggle();
   initSkillsFilter();
-  initGitHubRepos();
+  initLocalConditions();
   initContactForm();
   initResumeViewer();
   initYear();

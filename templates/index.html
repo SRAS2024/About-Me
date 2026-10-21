@@ -7,7 +7,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Samuel Simonds - Web Design and Technologies</title>
-    <meta name="description" content="Samuel Ryan Andrew Simonds, full stack engineer in Colorado Springs. Resume, experience, skills, projects and contact information." />
+    <meta name="description" content="Samuel Ryan Andrew Simonds, full stack engineer in Colorado Springs. Resume, experience, education, skills and contact information." />
     <link rel="canonical" href="{{ canonical_url }}" />
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -89,37 +89,6 @@
 </section>
 {% endif %}
 
-<!-- ── Portfolio (Paired Links) ────────────────────────────── -->
-{% if github_links|length > 0 or website_links|length > 0 %}
-<section class="section-wrap" id="portfolio">
-  <div class="container">
-    <h2 class="section-label text-center" data-i18n="portfolio">Portfolio</h2>
-
-    <div class="portfolio-grid">
-      <div>
-        <h3 class="portfolio-col-title" data-i18n="github">GitHub</h3>
-        {% for l in github_links %}
-          <a class="link-card" href="{{ l.url }}" target="_blank" rel="noreferrer">
-            <span class="link-card-label">{{ l.label }}</span>
-            <span class="link-card-url">{{ l.url }}</span>
-          </a>
-        {% endfor %}
-      </div>
-
-      <div>
-        <h3 class="portfolio-col-title" data-i18n="websites">Websites</h3>
-        {% for l in website_links %}
-          <a class="link-card" href="{{ l.url }}" target="_blank" rel="noreferrer">
-            <span class="link-card-label">{{ l.label }}</span>
-            <span class="link-card-url">{{ l.url }}</span>
-          </a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-</section>
-{% endif %}
-
 <!-- ── Accomplishments ─────────────────────────────────────── -->
 {% if accomplishments|length > 0 %}
 <section class="section-wrap section-dark" id="accomplishments">
@@ -153,10 +122,6 @@
       <a class="link-card" href="{{ url_for('skills') }}">
         <span class="link-card-label">Education &amp; Skills</span>
         <span class="explore-text">My degree, certification and a searchable list of skills.</span>
-      </a>
-      <a class="link-card" href="{{ url_for('projects') }}">
-        <span class="link-card-label">Projects</span>
-        <span class="explore-text">Client builds plus my public repositories, live from GitHub.</span>
       </a>
       <a class="link-card" href="{{ url_for('contact') }}">
         <span class="link-card-label">Contact</span>

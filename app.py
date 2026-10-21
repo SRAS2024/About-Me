@@ -41,7 +41,6 @@ NAV_PAGES = [
     {"endpoint": "about", "label": "About", "i18n": "about"},
     {"endpoint": "experience", "label": "Experience", "i18n": "experience"},
     {"endpoint": "skills", "label": "Education & Skills", "i18n": "skills"},
-    {"endpoint": "projects", "label": "Projects", "i18n": "projects"},
     {"endpoint": "contact", "label": "Contact", "i18n": "contact"},
 ]
 
@@ -378,8 +377,6 @@ def create_app() -> Flask:
             photo_exists = SitePhoto.query.first() is not None
             resume_locale = best_resume_locale()
             has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
-            github_links = get_links("github")
-            website_links = get_links("website")
             accomplishments = get_accomplishments()
             traits = get_traits()
         except Exception as exc:
@@ -391,8 +388,6 @@ def create_app() -> Flask:
                 photo_exists=False,
                 resume_locale="en",
                 has_resume=False,
-                github_links=[],
-                website_links=[],
                 accomplishments=[],
                 traits=[],
             )
@@ -403,8 +398,6 @@ def create_app() -> Flask:
             photo_exists=photo_exists,
             resume_locale=resume_locale,
             has_resume=has_resume,
-            github_links=github_links,
-            website_links=website_links,
             accomplishments=accomplishments,
             traits=traits,
         )
@@ -426,9 +419,11 @@ def create_app() -> Flask:
     def skills():
         return render_template("skills.html")
 
+    # The Projects page was retired; send old links and bookmarks to the homepage.
     @app.get("/projects.html")
-    def projects():
-        return render_template("projects.html")
+    @app.get("/projects")
+    def projects_retired():
+        return redirect(url_for("index"), code=301)
 
     @app.get("/contact.html")
     def contact():
@@ -501,7 +496,7 @@ def create_app() -> Flask:
         return jsonify({"ok": True}), 201
 
     # Short addresses without ".html" send visitors to the real page.
-    for slug in ("about", "experience", "skills", "projects", "contact"):
+    for slug in ("about", "experience", "skills", "contact"):
         app.add_url_rule(
             f"/{slug}",
             f"{slug}_short",

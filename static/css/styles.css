@@ -689,49 +689,6 @@ abbr[title]{text-decoration:underline dotted;text-underline-offset:3px;cursor:he
 .status-msg{font-size:.9rem;color:var(--gray-500)}
 #skills-empty{margin-top:16px}
 
-/* ── Projects ─────────────────────────────────────────────────── */
-.project-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));
-  gap:24px;
-}
-.project-card{
-  display:flex;flex-direction:column;
-  background:#fff;
-  border:1px solid var(--gray-200);
-  border-radius:var(--radius-lg);
-  overflow:hidden;
-  box-shadow:var(--shadow-sm);
-  transition:var(--transition);
-}
-.project-card:hover{border-color:var(--sage-light);box-shadow:var(--shadow)}
-.project-shot{border-bottom:1px solid var(--gray-200);background:var(--gray-100)}
-.project-shot img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top}
-.project-shot figcaption{padding:8px 16px;font-size:.72rem;color:var(--gray-500);border-top:1px solid var(--gray-200)}
-.project-body{display:flex;flex-direction:column;gap:12px;flex:1;padding:20px 22px 22px}
-.project-body h3{font-size:1.05rem;font-weight:700}
-.project-body p{font-size:.9rem;color:var(--gray-600)}
-.tag-list{list-style:none;display:flex;flex-wrap:wrap;gap:6px}
-.project-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:4px}
-
-.repo-toolbar{
-  display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;
-  gap:12px;margin-bottom:16px;
-}
-.repo-sort{display:flex;align-items:center;gap:10px}
-.repo-sort .label{margin-bottom:0;white-space:nowrap}
-.repo-sort .input{width:auto;padding:8px 12px}
-.repo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
-.repo-grid .link-card{margin-bottom:0;height:100%}
-.repo-desc{display:block;font-size:.82rem;color:var(--gray-600);margin:4px 0 10px}
-.repo-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.72rem;color:var(--gray-500)}
-.repo-lang::before{
-  content:"";display:inline-block;
-  width:8px;height:8px;border-radius:50%;
-  background:var(--sage);
-  margin-right:6px;vertical-align:middle;
-}
-
 /* ── Homepage "Explore" links ─────────────────────────────────── */
 .explore-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:14px}
 .explore-grid .link-card{margin-bottom:0}
@@ -800,7 +757,6 @@ select.input{cursor:pointer}
 }
 @media(max-width:640px){
   .contact-form .form-row{grid-template-columns:1fr}
-  .repo-toolbar{flex-direction:column;align-items:stretch}
 }
 .inline-link{color:var(--sage-dark);text-decoration:underline;text-decoration-color:var(--sage-light);text-underline-offset:3px}
 .inline-link:hover{color:var(--sage)}
@@ -873,8 +829,6 @@ select.input{cursor:pointer}
 /* Balanced grids: incomplete rows sit in the middle */
 .explore-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
 .explore-grid .link-card{flex:0 1 190px}
-.repo-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
-.repo-grid .link-card{flex:0 1 320px}
 .card-grid.two-up{grid-template-columns:repeat(2,minmax(0,1fr))}
 .prose{margin-left:auto;margin-right:auto}
 
@@ -904,7 +858,7 @@ select.input{cursor:pointer}
   .hero{padding:52px 0 48px}
   .hero-portrait{width:150px;height:150px;margin-bottom:22px}
   .resume-pages{gap:18px}
-  .repo-grid .link-card,.explore-grid .link-card{flex:1 1 100%}
+  .explore-grid .link-card{flex:1 1 100%}
 }
 .about-figure .photo-frame{border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px var(--sage-light),var(--shadow)}
 .role-part{white-space:nowrap}
@@ -926,3 +880,16 @@ select.input{cursor:pointer}
 }
 .social-link svg{width:22px;height:22px}
 .social-link:hover,.social-link:focus-visible{color:var(--sage-light);border-color:var(--sage);transform:translateY(-1px)}
+
+/* Contact page: local time and weather card (Open-Meteo) */
+.local-card{
+  margin-top:22px;padding:18px 20px;
+  border-radius:var(--radius-lg);
+  background:var(--sage-bg);
+  border:1px solid rgba(125,158,120,.25);
+  text-align:center;
+}
+.local-time{font-family:var(--serif);font-size:1.15rem;font-weight:700;color:var(--black);margin:2px 0 4px}
+.local-weather{font-size:.9rem;color:var(--sage-dark);font-weight:600}
+.local-credit{margin-top:10px;font-size:.7rem;color:var(--gray-500)}
+.local-credit a{color:var(--gray-500);text-decoration:underline;text-underline-offset:2px}
