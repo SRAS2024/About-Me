@@ -1,60 +1,57 @@
 # About Me
 
-A full-stack personal resume website built with Flask and PostgreSQL. It showcases my profile, resume, experience, skills, projects, and accomplishments, and it is managed through an authenticated admin panel with live preview.
+The personal resume website of **Samuel Ryan Andrew Simonds**, Technical Support Engineer in Colorado Springs, Colorado. It is a Flask and PostgreSQL application with six public pages and a private admin panel for updating the photo, resume, links, traits and accomplishments without touching code.
 
 **Live site:** [https://ssimonds.com](https://ssimonds.com) (also served at [about-me-production-361e.up.railway.app](https://about-me-production-361e.up.railway.app))
 
 ---
 
-## Features
-
-### Pages
+## Pages
 
 | Page | URL | What it shows |
 |------|-----|---------------|
-| Home | `/` (also `/index.html`) | Hero, traits, photo, embedded resume, portfolio links, accomplishments, links to every page |
+| Home | `/` (also `/index.html`) | Tagline, traits, profile photo, embedded resume (PDF), portfolio links, accomplishments, links to every page |
 | About | `/about.html` | Background, career objective, strengths, career goals, quick facts |
-| Experience | `/experience.html` | Employment history table and details for each role |
-| Education & Skills | `/skills.html` | Degree, certification, and a skills table with category and search filters |
+| Experience | `/experience.html` | Employment history table (eCatholic and Apple) and details for each role |
+| Education & Skills | `/skills.html` | BBA from the University of Massachusetts Global, two IBM certifications, and a skills table with category and search filters |
 | Projects | `/projects.html` | Featured client projects with screenshots, plus public repositories loaded live from the GitHub REST API |
-| Contact | `/contact.html` | Contact form with browser and server validation; messages are stored in PostgreSQL |
+| Contact | `/contact.html` | Contact form validated in the browser and on the server; messages are stored in PostgreSQL |
 
-Short addresses such as `/about` redirect to the `.html` pages.
+Short addresses such as `/about` redirect to the matching `.html` page. Every public page is a complete HTML document with the title `Samuel Simonds - Web Design and Technologies`.
 
-### Public Portfolio
-- Hero section with profile photo, tagline, bio, and skill traits
-- Embedded PDF resume viewer with locale-aware selection
-- Portfolio section for GitHub and website links
-- Accomplishments list
-- Multi-language support (10 locales including EN, PT, ES, FR, DE, IT, JA, KO, ZH)
-- Automatic language detection from browser preferences
-- Shared navigation on every page, with a collapsible menu on phones
-- Skills filter (category buttons and search) written in plain JavaScript
-- GitHub REST API integration on the Projects page (cached for 10 minutes per visit)
-- Contact form with inline validation, a spam honeypot and a per-visitor rate limit
+---
 
-### Admin Panel
-- Upload and manage profile photo (automatic optimization and resizing)
-- Upload resumes per locale with PDF download
-- Add, edit, and delete up to 12 traits
-- Manage GitHub links (max 5) and website links (max 5)
-- Manage up to 20 accomplishments with drag-and-drop reordering
-- Real-time side-by-side live preview of all changes
+## Features
+
+### Public site
+- Shared header and navigation on every page; on phones the menu folds behind a Menu button
+- Embedded resume viewer that picks the resume matching the visitor's browser language
+- Skills table filter (category buttons plus a search box) with a live result count
+- GitHub REST API integration that lists public repositories with sort options, a 10-minute session cache and an error fallback
+- Contact form with inline error messages, focus on the first error, a character counter, a spam honeypot and a limit of five messages per visitor every ten minutes; it also works without JavaScript
+- Short UI labels translated into nine languages based on the visitor's browser
+- Accessible markup: real headings, labelled fields, table captions and header scopes, skip link, alt text on every image
+- Search engine support: `/sitemap.xml`, `/robots.txt`, and a canonical link on every page pointing to `https://ssimonds.com`
+
+### Admin panel (`/admin`)
+- Upload or remove the profile photo (resized and compressed automatically, phone rotation respected)
+- Upload a resume PDF per language and delete old ones
+- Edit up to 12 traits, 5 GitHub links, 5 website links and 20 accomplishments
+- Side-by-side live preview before saving
 - Read and delete messages sent through the Contact page
-- Optional TinyPNG image compression
+- Optional TinyPNG compression
 
 ---
 
 ## Tech Stack
 
-| Layer          | Technology                              |
-|----------------|-----------------------------------------|
-| Backend        | Flask 3.0.3, Gunicorn                   |
-| Database       | PostgreSQL 16, SQLAlchemy               |
-| Frontend       | Jinja2, Vanilla JS, CSS                 |
-| i18n           | Flask-Babel (10 locales)                |
-| Image Processing | Pillow, TinyPNG (optional)           |
-| Deployment     | Docker, Railway                         |
+| Layer | Technology |
+|-------|------------|
+| Back end | Python, Flask 3.0, Gunicorn |
+| Database | PostgreSQL 16, SQLAlchemy |
+| Front end | Jinja2 templates, HTML5, one CSS stylesheet, vanilla JavaScript |
+| Images | Pillow, optional TinyPNG |
+| Hosting | Docker on Railway, domain registered at Network Solutions |
 
 ---
 
@@ -62,31 +59,31 @@ Short addresses such as `/about` redirect to the `.html` pages.
 
 ```
 About-Me/
-├── app.py                 # Flask application and routes
-├── models.py              # SQLAlchemy database models
-├── config.py              # Configuration and environment variables
-├── i18n.py                # Internationalization setup
+├── app.py                     # Flask app: page routes, contact API, admin APIs, sitemap/robots
+├── models.py                  # SQLAlchemy models (photo, resumes, links, traits, accomplishments, contact messages)
+├── config.py                  # Settings read from environment variables
+├── i18n.py                    # Locale selection
 ├── services/
-│   └── image_processing.py
+│   └── image_processing.py    # Photo resizing, rotation and compression
 ├── templates/
-│   ├── partials/
-│   │   ├── site_header.html   # Shared header and navigation
-│   │   └── site_footer.html   # Shared footer and scripts
-│   ├── index.html         # Homepage
+│   ├── index.html             # Homepage
 │   ├── about.html
 │   ├── experience.html
 │   ├── skills.html
 │   ├── projects.html
 │   ├── contact.html
-│   ├── base.html          # Layout for the admin pages
-│   ├── admin.html         # Admin control panel
+│   ├── partials/
+│   │   ├── site_header.html   # Shared header and navigation
+│   │   └── site_footer.html   # Shared footer and scripts
+│   ├── base.html              # Layout for the admin pages
+│   ├── admin.html             # Admin panel
 │   └── admin_login.html
 ├── static/
-│   ├── css/styles.css     # One stylesheet for the whole site
-│   ├── js/site.js         # Navigation, skills filter, GitHub API, contact form
-│   ├── js/i18n.js         # Translates short labels to the visitor's language
-│   ├── js/admin.js        # Admin panel
-│   └── images/            # Portrait, project screenshots, favicon
+│   ├── css/styles.css         # The single stylesheet for the whole site
+│   ├── js/site.js             # Navigation, skills filter, GitHub API, contact form
+│   ├── js/i18n.js             # Label translations
+│   ├── js/admin.js            # Admin panel
+│   └── images/                # Portrait, project screenshots, favicon
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -98,9 +95,9 @@ About-Me/
 ## Getting Started
 
 ### Prerequisites
-- Docker & Docker Compose **or** Python 3.12+ with PostgreSQL
+- Docker and Docker Compose, **or** Python 3.12+ with PostgreSQL
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: Docker Compose
 
 ```bash
 git clone https://github.com/SRAS2024/About-Me.git
@@ -110,9 +107,9 @@ cp .env.example .env
 docker-compose up
 ```
 
-The app will be available at `http://localhost:8000`.
+The app is then available at `http://localhost:8000`.
 
-### Option 2: Local Development
+### Option 2: Local development
 
 ```bash
 python3 -m venv venv
@@ -127,28 +124,54 @@ export ADMIN_PASSWORD="choose-a-strong-password"
 python -c "from app import app; app.run(debug=True, port=8000)"
 ```
 
+Tables are created automatically on startup. SSL is required for remote databases and skipped for `localhost`, `127.0.0.1` and the `db` Docker service.
+
 ---
 
 ## Environment Variables
 
-| Variable          | Required | Description                              |
-|-------------------|----------|------------------------------------------|
-| `SECRET_KEY`      | Yes      | Flask session signing key (a long random string) |
-| `DATABASE_URL`    | Yes      | PostgreSQL connection string             |
-| `ADMIN_USERNAME`  | Yes      | Admin login username (login is disabled if unset) |
-| `ADMIN_PASSWORD`  | Yes      | Admin login password (login is disabled if unset) |
-| `TINIFY_API_KEY`  | No       | TinyPNG API key for image compression    |
-| `PORT`            | No       | Server port (default: 8000)              |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `SECRET_KEY` | Yes | Session signing key (a long random string). If missing, a random key is generated at startup and admins are signed out on every restart |
+| `ADMIN_USERNAME` | Yes | Admin login username. Admin login is disabled if this is not set |
+| `ADMIN_PASSWORD` | Yes | Admin login password. Admin login is disabled if this is not set |
+| `SITE_URL` | No | Main public address used in the sitemap, robots.txt and canonical links (default `https://ssimonds.com`) |
+| `TINIFY_API_KEY` | No | TinyPNG API key for extra image compression |
+| `PORT` | No | Server port (default 8000; Railway sets it) |
+
+Never commit real values. On Railway they live in the service's Variables tab.
 
 ---
 
-## Usage
+## Using the Admin Panel
 
-1. Navigate to `/admin/login` and sign in with your admin credentials.
-2. Use the admin panel to upload your photo, resume, traits, links, and accomplishments.
-3. Preview changes in real time using the live preview panel.
-4. Click **Save All Changes** to persist to the database.
-5. Visit the public page at `/` to see your portfolio.
+1. Go to `/admin/login` and sign in.
+2. Upload a photo or resume, and edit traits, links and accomplishments. The preview on the right updates as you type.
+3. Click **Save All Changes** to save traits, links and accomplishments. Photo and resume uploads save immediately.
+4. Read or delete contact messages in the **Contact Messages** section.
+
+---
+
+## Deployment
+
+The site runs on [Railway](https://railway.app) in the project `romantic-wholeness`, service `About-Me`, next to a managed PostgreSQL service. Railway builds the `Dockerfile` and deploys automatically on every push to the `main` branch, which is the only branch in this repository.
+
+### Domain
+
+`ssimonds.com` is registered at Network Solutions and connected to Railway with these DNS records:
+
+| Type | Name | Value |
+|------|------|-------|
+| CNAME | `@` | `98x4zfhn.up.railway.app` |
+| CNAME | `www` | `n1fpne6m.up.railway.app` |
+| TXT | `_railway-verify.www` | Railway's verification value for `www.ssimonds.com` |
+
+Railway issues the HTTPS certificates automatically.
+
+### Google Search Console
+
+The site is verified in Google Search Console as the URL-prefix property `https://ssimonds.com/` using the HTML file method: the app serves `/google0292583cfdf40074.html`. Keep that route in `app.py`, or Search Console will lose verification. The sitemap is at `https://ssimonds.com/sitemap.xml`.
 
 ---
 
@@ -158,16 +181,10 @@ python -c "from app import app; app.run(debug=True, port=8000)"
 GET /health
 ```
 
-Returns `{"status": "ok", "db_ok": true}` when the application and database are running correctly.
-
----
-
-## Deployment
-
-The application is configured for deployment on [Railway](https://railway.app) with Docker. The included `Dockerfile` and `docker-compose.yml` handle the full setup including PostgreSQL provisioning and Gunicorn as the production server.
+Returns `{"status": "ok", "db_ok": true, "db": "ok"}` when the app and database are working.
 
 ---
 
 ## License
 
-This project is open source.
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE).

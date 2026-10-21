@@ -802,3 +802,5 @@ select.input{cursor:pointer}
   .contact-form .form-row{grid-template-columns:1fr}
   .repo-toolbar{flex-direction:column;align-items:stretch}
 }
+.inline-link{color:var(--sage-dark);text-decoration:underline;text-decoration-color:var(--sage-light);text-underline-offset:3px}
+.inline-link:hover{color:var(--sage)}
