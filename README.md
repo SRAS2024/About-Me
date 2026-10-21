@@ -2,7 +2,7 @@
 
 The personal resume website of **Samuel Ryan Andrew Simonds**, Technical Support Engineer in Colorado Springs, Colorado. It is a Flask and PostgreSQL application with six public pages and a private admin panel for updating the photo, resume, links, traits and accomplishments without touching code.
 
-**Live site:** [https://ssimonds.com](https://ssimonds.com) (also served at [about-me-production-361e.up.railway.app](https://about-me-production-361e.up.railway.app))
+**Live site:** [https://www.ssimonds.com](https://www.ssimonds.com) (`ssimonds.com` forwards there; the site is also served at [about-me-production-361e.up.railway.app](https://about-me-production-361e.up.railway.app))
 
 ---
 
@@ -10,7 +10,7 @@ The personal resume website of **Samuel Ryan Andrew Simonds**, Technical Support
 
 | Page | URL | What it shows |
 |------|-----|---------------|
-| Home | `/` (also `/index.html`) | Tagline, traits, profile photo, embedded resume (PDF), portfolio links, accomplishments, links to every page |
+| Home | `/` (also `/index.html`) | Centered introduction (portrait, name, title, traits), the full resume drawn into the page, portfolio links, accomplishments, links to every page |
 | About | `/about.html` | Background, career objective, strengths, career goals, quick facts |
 | Experience | `/experience.html` | Employment history table (eCatholic and Apple) and details for each role |
 | Education & Skills | `/skills.html` | BBA from the University of Massachusetts Global, two IBM certifications, and a skills table with category and search filters |
@@ -23,15 +23,20 @@ Short addresses such as `/about` redirect to the matching `.html` page. Every pu
 
 ## Features
 
+### Design
+- Black, off-white and sage palette; Inter for text and Source Serif 4 for display headings
+- Centered, symmetrical layouts: centered hero and section titles, balanced card grids, a centered footer with every page link
+- Circular portraits framed in sage; resume pages shown as sheets of paper
+
 ### Public site
 - Shared header and navigation on every page; on phones the menu folds behind a Menu button
-- Embedded resume viewer that picks the resume matching the visitor's browser language
+- The resume (the PDF that matches the visitor's browser language) is drawn page by page with PDF.js at the full width of the screen, so it reads as part of the page with no inner scrollbar on any device; buttons download it or open it in a new tab
 - Skills table filter (category buttons plus a search box) with a live result count
 - GitHub REST API integration that lists public repositories with sort options, a 10-minute session cache and an error fallback
 - Contact form with inline error messages, focus on the first error, a character counter, a spam honeypot and a limit of five messages per visitor every ten minutes; it also works without JavaScript
 - Short UI labels translated into nine languages based on the visitor's browser
 - Accessible markup: real headings, labelled fields, table captions and header scopes, skip link, alt text on every image
-- Search engine support: `/sitemap.xml`, `/robots.txt`, and a canonical link on every page pointing to `https://ssimonds.com`
+- Search engine support: `/sitemap.xml`, `/robots.txt`, and a canonical link on every page pointing to `https://www.ssimonds.com`
 
 ### Admin panel (`/admin`)
 - Upload or remove the profile photo (resized and compressed automatically, phone rotation respected)
@@ -49,7 +54,8 @@ Short addresses such as `/about` redirect to the matching `.html` page. Every pu
 |-------|------------|
 | Back end | Python, Flask 3.0, Gunicorn |
 | Database | PostgreSQL 16, SQLAlchemy |
-| Front end | Jinja2 templates, HTML5, one CSS stylesheet, vanilla JavaScript |
+| Front end | Jinja2 templates, HTML5, one CSS stylesheet, vanilla JavaScript, PDF.js 3.11 (resume rendering) |
+| Fonts | Inter and Source Serif 4 (Google Fonts) |
 | Images | Pillow, optional TinyPNG |
 | Hosting | Docker on Railway, domain registered at Network Solutions |
 
@@ -80,7 +86,7 @@ About-Me/
 │   └── admin_login.html
 ├── static/
 │   ├── css/styles.css         # The single stylesheet for the whole site
-│   ├── js/site.js             # Navigation, skills filter, GitHub API, contact form
+│   ├── js/site.js             # Navigation, skills filter, GitHub API, contact form, resume rendering
 │   ├── js/i18n.js             # Label translations
 │   ├── js/admin.js            # Admin panel
 │   └── images/                # Portrait, project screenshots, favicon
@@ -136,7 +142,7 @@ Tables are created automatically on startup. SSL is required for remote database
 | `SECRET_KEY` | Yes | Session signing key (a long random string). If missing, a random key is generated at startup and admins are signed out on every restart |
 | `ADMIN_USERNAME` | Yes | Admin login username. Admin login is disabled if this is not set |
 | `ADMIN_PASSWORD` | Yes | Admin login password. Admin login is disabled if this is not set |
-| `SITE_URL` | No | Main public address used in the sitemap, robots.txt and canonical links (default `https://ssimonds.com`) |
+| `SITE_URL` | No | Main public address used in the sitemap, robots.txt and canonical links (default `https://www.ssimonds.com`) |
 | `TINIFY_API_KEY` | No | TinyPNG API key for extra image compression |
 | `PORT` | No | Server port (default 8000; Railway sets it) |
 
@@ -163,15 +169,18 @@ The site runs on [Railway](https://railway.app) in the project `romantic-wholene
 
 | Type | Name | Value |
 |------|------|-------|
-| CNAME | `@` | `98x4zfhn.up.railway.app` |
 | CNAME | `www` | `n1fpne6m.up.railway.app` |
 | TXT | `_railway-verify.www` | Railway's verification value for `www.ssimonds.com` |
+| CNAME | `@` | `0b38yxji.up.railway.app` |
+| TXT | `_railway-verify` | Railway's verification value for `ssimonds.com` |
 
-Railway issues the HTTPS certificates automatically.
+`https://www.ssimonds.com` is the main address. Requests to the bare `ssimonds.com` are forwarded there by the app (`redirect_bare_domain` in `app.py`). Railway issues the HTTPS certificates automatically.
+
+Because the root of the domain is a CNAME, Network Solutions cannot serve other records (such as a Google TXT record) at `ssimonds.com` itself; use subdomain records or file-based verification instead.
 
 ### Google Search Console
 
-The site is verified in Google Search Console as the URL-prefix property `https://ssimonds.com/` using the HTML file method: the app serves `/google0292583cfdf40074.html`. Keep that route in `app.py`, or Search Console will lose verification. The sitemap is at `https://ssimonds.com/sitemap.xml`.
+The site is verified in Google Search Console as the URL-prefix property `https://www.ssimonds.com/` using the HTML file method: the app serves `/google0292583cfdf40074.html`. Keep that route in `app.py`, or Search Console will lose verification. The sitemap `https://www.ssimonds.com/sitemap.xml` is submitted there.
 
 ---
 
