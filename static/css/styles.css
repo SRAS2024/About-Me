@@ -890,7 +890,8 @@ select.input{cursor:pointer}
   border:1px solid rgba(125,158,120,.25);
   text-align:center;
 }
-.local-time{font-family:var(--serif);font-size:1.15rem;font-weight:700;color:var(--black);margin:2px 0 4px}
+.local-time{font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--black);margin:4px 0 0}
+.local-zone{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-500);margin-bottom:8px}
 .local-weather{font-size:.9rem;color:var(--sage-dark);font-weight:600}
 .local-credit{margin-top:10px;font-size:.7rem;color:var(--gray-500)}
 .local-credit a{color:var(--gray-500);text-decoration:underline;text-underline-offset:2px}

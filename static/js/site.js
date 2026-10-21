@@ -96,8 +96,7 @@
     function showTime() {
       if (!timeEl) return;
       var now = new Date();
-      var text = now.toLocaleString("en-US", { timeZone: tz, weekday: "long", hour: "numeric", minute: "2-digit" });
-      timeEl.textContent = text + " Mountain Time";
+      timeEl.textContent = now.toLocaleString("en-US", { timeZone: tz, weekday: "long", hour: "numeric", minute: "2-digit" });
     }
 
     function showWeather(current) {

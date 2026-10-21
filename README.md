@@ -25,6 +25,7 @@ Short addresses such as `/about` redirect to the matching `.html` page. The form
 ### Design
 - Black, off-white and sage palette; Inter for text and Source Serif 4 for display headings
 - Centered, symmetrical layouts: centered hero and section titles, balanced card grids, and a centered footer with every page link, email and a line-drawn LinkedIn icon
+- Light sections throughout (white and soft sage); the header, page banners and footer are the only dark areas
 - Circular portraits framed in sage; resume pages shown as sheets of paper
 
 ### Public site
