@@ -25,12 +25,12 @@ Short addresses such as `/about` redirect to the matching `.html` page. Every pu
 
 ### Design
 - Black, off-white and sage palette; Inter for text and Source Serif 4 for display headings
-- Centered, symmetrical layouts: centered hero and section titles, balanced card grids, a centered footer with every page link
+- Centered, symmetrical layouts: centered hero and section titles, balanced card grids, and a centered footer with every page link, email, GitHub and a line-drawn LinkedIn icon
 - Circular portraits framed in sage; resume pages shown as sheets of paper
 
 ### Public site
 - Shared header and navigation on every page; on phones the menu folds behind a Menu button
-- The resume (the PDF that matches the visitor's browser language) is drawn page by page with PDF.js at the full width of the screen, so it reads as part of the page with no inner scrollbar on any device; buttons download it or open it in a new tab
+- The resume (the PDF that matches the visitor's browser language) is drawn page by page with PDF.js at the full width of the screen, so it reads as part of the page with no inner scrollbar on any device. There are no download or open-in-new-tab buttons; a link to the PDF appears only if the resume can't be drawn (for example with JavaScript turned off)
 - Skills table filter (category buttons plus a search box) with a live result count
 - GitHub REST API integration that lists public repositories with sort options, a 10-minute session cache and an error fallback
 - Contact form with inline error messages, focus on the first error, a character counter, a spam honeypot and a limit of five messages per visitor every ten minutes; it also works without JavaScript
@@ -80,7 +80,7 @@ About-Me/
 │   ├── contact.html
 │   ├── partials/
 │   │   ├── site_header.html   # Shared header and navigation
-│   │   └── site_footer.html   # Shared footer and scripts
+│   │   └── site_footer.html   # Shared footer (page links, email, GitHub, LinkedIn) and scripts
 │   ├── base.html              # Layout for the admin pages
 │   ├── admin.html             # Admin panel
 │   └── admin_login.html

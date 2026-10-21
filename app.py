@@ -420,15 +420,7 @@ def create_app() -> Flask:
 
     @app.get("/experience.html")
     def experience():
-        # Only offer the resume download when a resume has actually been uploaded.
-        try:
-            resume_locale = best_resume_locale()
-            has_resume = ResumeFile.query.filter_by(locale=resume_locale).first() is not None
-        except Exception as exc:
-            db.session.rollback()
-            app.logger.error("Database unavailable on /experience.html: %s", exc)
-            resume_locale, has_resume = "en", False
-        return render_template("experience.html", has_resume=has_resume, resume_locale=resume_locale)
+        return render_template("experience.html")
 
     @app.get("/skills.html")
     def skills():

@@ -869,8 +869,6 @@ select.input{cursor:pointer}
   background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius-lg);
 }
 .resume-status a{color:var(--sage-dark);text-decoration:underline;text-underline-offset:3px}
-.resume-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:32px}
-.resume-actions .btn-outline{padding:12px 28px;font-size:.88rem}
 
 /* Balanced grids: incomplete rows sit in the middle */
 .explore-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
@@ -916,3 +914,15 @@ select.input{cursor:pointer}
   .name-subtitle{line-height:2}
   .hero-role{line-height:2}
 }
+
+/* Footer social link (LinkedIn) */
+.footer-social{display:flex;justify-content:center;gap:12px;margin-top:6px}
+.social-link{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.16);
+  color:var(--gray-400);
+  transition:var(--transition);
+}
+.social-link svg{width:22px;height:22px}
+.social-link:hover,.social-link:focus-visible{color:var(--sage-light);border-color:var(--sage);transform:translateY(-1px)}
