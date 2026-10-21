@@ -52,8 +52,8 @@ Short addresses such as `/about` redirect to the matching `.html` page. Every pu
 
 | Layer | Technology |
 |-------|------------|
-| Back end | Python, Flask 3.0, Gunicorn |
-| Database | PostgreSQL 16, SQLAlchemy |
+| Back end | Python 3.12, Flask 3.0, Gunicorn |
+| Database | PostgreSQL 17 on Railway (16 in the local Docker Compose setup), SQLAlchemy with psycopg |
 | Front end | Jinja2 templates, HTML5, one CSS stylesheet, vanilla JavaScript, PDF.js 3.11 (resume rendering) |
 | Fonts | Inter and Source Serif 4 (Google Fonts) |
 | Images | Pillow, optional TinyPNG |
