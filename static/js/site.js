@@ -415,7 +415,8 @@
 
     if (!lib || !src) { showFallback(); return; }
     lib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    lib.getDocument(src).promise
+    // isEvalSupported: false closes CVE-2024-4367 (font code run via eval) in PDF.js 3.x.
+    lib.getDocument({ url: src, isEvalSupported: false }).promise
       .then(function (loaded) { pdf = loaded; render(); })
       .catch(function (err) {
         if (window.console) console.warn(err);
