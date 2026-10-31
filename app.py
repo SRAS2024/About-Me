@@ -272,6 +272,34 @@ def create_app() -> Flask:
         ok, msg = db_ping()
         return jsonify({"status": "ok", "db_ok": ok, "db": msg}), 200
 
+    # ── Hidden mode ───────────────────────────────────────────────
+    # The site is hidden unless the SITE_PUBLIC variable is "1" (owner's decision, 2026-10-30: not ready to be public
+    # or listed on Google). Hidden, every page — public, admin and static files alike — is a blank page answered
+    # "410 Gone" with noindex, which tells search engines to drop it. robots.txt allows crawling so they can see that.
+    # Two addresses keep working: /health (Railway's check) and the Search Console file, so the property stays
+    # verified for removal requests. Nothing is deleted: set SITE_PUBLIC=1 in Railway to bring the site back unchanged.
+    SITE_PUBLIC = os.environ.get("SITE_PUBLIC", "").strip() == "1"
+    HIDDEN_ALLOWED = {"/health", "/google0292583cfdf40074.html"}
+    BLANK_PAGE = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="robots" content="noindex, nofollow, noarchive"><title></title></head><body></body></html>'
+    )
+
+    @app.before_request
+    def hidden_site():
+        if SITE_PUBLIC or request.path in HIDDEN_ALLOWED:
+            return None
+        if request.path == "/robots.txt":
+            return app.response_class("User-agent: *\nDisallow:\n", mimetype="text/plain")
+        return app.response_class(BLANK_PAGE, status=410, mimetype="text/html")
+
+    @app.after_request
+    def hidden_site_headers(response):
+        if not SITE_PUBLIC:
+            response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
     # The bare domain forwards to the main www address, keeping the path and query.
     @app.before_request
     def redirect_bare_domain():

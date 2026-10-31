@@ -142,11 +142,14 @@ Tables are created automatically on startup. SSL is required for remote database
 | `SECRET_KEY` | Yes | Session signing key (a long random string). If missing, a random key is generated at startup and admins are signed out on every restart |
 | `ADMIN_USERNAME` | Yes | Admin login username. Admin login is disabled if this is not set |
 | `ADMIN_PASSWORD` | Yes | Admin login password. Admin login is disabled if this is not set |
+| `SITE_PUBLIC` | No | `1` shows the site. Anything else (the default) hides it: every page is a blank "410 Gone" page marked noindex, so search engines drop it; only `/health` and the Search Console file still answer. Nothing is deleted |
 | `SITE_URL` | No | Main public address used in the sitemap, robots.txt and canonical links (default `https://www.ssimonds.com`) |
 | `TINIFY_API_KEY` | No | TinyPNG API key for extra image compression |
 | `PORT` | No | Server port (default 8000; Railway sets it) |
 
 Never commit real values. On Railway they live in the service's Variables tab.
+
+Local development: set `SITE_PUBLIC=1` too, or every page is blank.
 
 ---
 
